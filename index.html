@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมจัดวางภาพและสร้าง PDF (แบบปรับขนาดอิสระ)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas และ jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- PDF.js สำหรับอ่านไฟล์ PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+            margin: 0;
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            user-select: none;
+            color: #0f172a;
+        }
+
+        #workspace {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            padding-top: 100px;
+            overflow: auto;
+            height: 100vh;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .page-a4 {
+            width: 210mm;
+            height: 297mm;
+            background-color: white;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15), 0 0 10px rgba(0,0,0,0.03);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            transform-origin: top center; /* สำคัญสำหรับการย่อขยาย */
+            margin-bottom: 3rem;
+            border-radius: 2px;
+        }
+
+        /* Container สำหรับจัดการพื้นที่หลังปรับ Scale */
+        .page-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* กล่องหุ้มรูปภาพ */
+        .image-container {
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            cursor: grab;
+            border: 2px dashed transparent;
+            box-sizing: border-box;
+            background-color: transparent;
+            touch-action: none; /* ป้องกันการเลื่อนหน้าจอเวลาลากบนมือถือ */
+        }
+
+        .image-container:active {
+            cursor: grabbing;
+        }
+
+        /* ตัวรูปภาพด้านใน (ตั้งให้ยืดเต็มกล่องเสมอ) */
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill; /* อนุญาตให้ยืด/หด เสียสัดส่วนได้ตามอิสระ */
+            pointer-events: none;
+            display: block;
+        }
+
+        /* ---- สถานะเมื่อถูกเลือก (Selected) ---- */
+        .image-container.selected {
+            border: 2px solid #8b5cf6;
+            z-index: 50;
+            filter: drop-shadow(0 8px 20px rgba(139, 92, 246, 0.3));
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-color: #8b5cf6; }
+            50% { border-color: #a78bfa; }
+            100% { border-color: #8b5cf6; }
+        }
+
+        /* ปุ่มลบรูปภาพ */
+        .delete-btn {
+            position: absolute;
+            top: -14px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(239,68,68,0.3);
+            z-index: 100;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .delete-btn:hover {
+            background-color: #dc2626;
+            transform: scale(1.15);
+        }
+
+        .image-container.selected .delete-btn {
+            display: flex;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* ---- จุดจับเพื่อปรับขนาด (Resizers) ---- */
+        .resizer {
+            width: 16px;
+            height: 16px;
+            background-color: white;
+            border: 2.5px solid #8b5cf6;
+            border-radius: 50%;
+            position: absolute;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 2px 6px rgba(139,92,246,0.3);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .resizer:hover {
+            transform: scale(1.3);
+            background-color: #f5f3ff;
+        }
+
+        .image-container.selected .resizer {
+            display: block;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .resizer.nw { top: -8px; left: -8px; cursor: nwse-resize; }
+        .resizer.ne { top: -8px; right: -8px; cursor: nesw-resize; }
+        .resizer.sw { bottom: -8px; left: -8px; cursor: nesw-resize; }
+        .resizer.se { bottom: -8px; right: -8px; cursor: nwse-resize; }
+
+        /* จุดจับเพื่อหมุน (Rotation Handle) */
+        .rotate-handle {
+            width: 24px;
+            height: 24px;
+            background-color: white;
+            border: 2px solid #7c3aed;
+            border-radius: 50%;
+            position: absolute;
+            top: -45px;
+            left: calc(50% - 12px);
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            cursor: alias;
+            color: #7c3aed;
+            transition: all 0.2s;
+        }
+
+        .rotate-handle:hover {
+            background-color: #f5f3ff;
+            transform: translate(-50%, -2px) scale(1.1);
+        }
+
+        .image-container.selected .rotate-handle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* เส้นเชื่อมจุดหมุน */
+        .rotate-handle::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 25px;
+            background: linear-gradient(to bottom, #7c3aed, transparent);
+            top: 22px;
+            left: calc(50% - 1px);
+        }
+
+        /* ป้ายบอกองศา */
+        .angle-badge {
+            position: absolute;
+            top: -75px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+            z-index: 110;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-container.rotating .angle-badge {
+            display: block;
+        }
+
+        /* เส้น Guide กึ่งกลาง */
+        .guide-line {
+            position: absolute;
+            background-color: #7c3aed;
+            display: none;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .guide-line.vertical {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+            border-left: 1px dashed #7c3aed;
+        }
+
+        .guide-line.horizontal {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+            border-top: 1px dashed #7c3aed;
+        }
+
+        .page-a4.show-v-guide .guide-line.vertical { display: block; }
+        .page-a4.show-h-guide .guide-line.horizontal { display: block; }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* ---- แถบเครื่องมือธีมพรีเมียม (Glassmorphism) ---- */
+        .toolbar {
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            border: none;
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+            filter: brightness(1.05);
+        }
+
+        .btn-purple:active {
+            transform: translateY(0);
+        }
+        
+        /* สไตล์ปุ่มเสริม */
+        .btn-outline {
+            background-color: rgba(255,255,255,0.8);
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .btn-outline:hover {
+            background-color: #fff;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            color: #0f172a;
+        }
+
+        /* ซ่อน UI ทั้งหมดขณะดาวน์โหลด PDF */
+        .exporting .image-container { border: none !important; }
+        .exporting .delete-btn, .exporting .resizer, .exporting .rotate-handle { display: none !important; }
+        
+        #messageModal { display: none; }
+        #messageModal.active { display: flex; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden relative text-slate-800">
+
+    <!-- แถบเครื่องมือ -->
+    <div class="absolute top-4 w-full flex justify-center px-4 z-[200] pointer-events-none">
+        <div class="toolbar pointer-events-auto px-5 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-4 w-full max-w-6xl">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden p-0.5 border border-slate-100">
+                    <img src="image/logopdf.png" alt="PDF Studio Logo" class="w-full h-full object-contain">
+                </div>
+                <div>
+                    <h1 class="text-xl font-black bg-gradient-to-r from-purple-700 to-indigo-500 bg-clip-text text-transparent leading-none tracking-tight">
+                        PDF Studio
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Premium Editor</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+                <input type="file" id="imageUpload" accept="image/*,application/pdf" multiple class="hidden">
+                <label for="imageUpload" id="uploadLabel" class="btn-outline px-4 md:px-5 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 font-semibold text-sm transition-all relative">
+                    <i class="ph ph-file-arrow-up text-xl text-purple-500" id="uploadIcon"></i> <span class="hidden sm:inline" id="uploadText">อัปโหลด (ภาพ/PDF)</span>
+                </label>
+
+                <button onclick="addPage()" class="btn-outline px-4 md:px-5 py-2.5 rounded-xl flex items-center gap-2 font-semibold text-sm">
+                    <i class="ph ph-file-plus text-xl text-blue-500"></i> <span class="hidden sm:inline">เพิ่มหน้า A4</span>
+                </button>
+                
+                <button id="deleteBtn" onclick="deleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 rounded-xl transition flex items-center gap-2 font-semibold border border-red-100 hidden text-sm shadow-sm">
+                    <i class="ph ph-trash text-xl"></i> <span class="hidden lg:inline">ลบที่เลือก</span>
+                </button>
+
+                <button id="rotateBtn" onclick="rotate90()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2.5 rounded-xl transition flex items-center gap-2 font-semibold border border-indigo-100 hidden text-sm shadow-sm">
+                    <i class="ph ph-arrow-clockwise text-xl"></i> <span class="hidden lg:inline">หมุน 90°</span>
+                </button>
+                
+                <div class="h-8 w-[1px] bg-slate-200 mx-1 hidden md:block"></div>
+                
+                <button onclick="clearAll()" class="text-slate-400 hover:text-red-500 px-2 py-2.5 transition flex items-center font-medium text-sm" title="ล้างภาพทั้งหมด">
+                    <i class="ph ph-trash-simple text-xl"></i>
+                </button>
+
+                <button id="exportBtn" onclick="openExportModal()" class="btn-purple px-5 md:px-7 py-2.5 rounded-xl flex items-center gap-2.5 font-bold text-sm ml-1">
+                    <i class="ph ph-export text-xl font-bold"></i> <span>Export</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- แถบคำแนะนำ (Floating Toast) -->
+    <div class="absolute bottom-6 left-6 bg-slate-800/95 backdrop-blur-md text-white text-[13px] py-3 px-5 rounded-2xl font-medium tracking-wide z-[200] flex items-center gap-3 border border-slate-700/50 hover:bg-slate-800 transition-colors pointer-events-auto shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]" id="tipsToast">
+        <div class="bg-purple-500/20 text-purple-300 w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+            <i class="ph ph-lightbulb-filament text-lg"></i>
+        </div>
+        <div>
+            กด <span class="bg-slate-700 px-1.5 py-0.5 rounded text-purple-200 border border-slate-600 mx-0.5 text-xs">Delete</span> เพื่อลบภาพ<br>
+            <span class="text-slate-400 text-[11px]">คลิกค้างเพื่อลากย้ายรูปเข้าหน้ากระดาษต่างๆ</span>
+        </div>
+        <button onclick="document.getElementById('tipsToast').remove()" class="ml-2 text-slate-400 hover:text-white p-1 transition-colors">
+            <i class="ph ph-x text-sm"></i>
+        </button>
+    </div>
+
+    <!-- พื้นที่ทำงาน -->
+    <div id="workspace" class="flex-grow">
+        <!-- หน้า A4 แผ่นแรก -->
+        <div class="page-wrapper" id="wrapper-1">
+            <div class="page-a4 relative bg-white" id="page-1">
+                <div class="guide-line vertical"></div>
+                <div class="guide-line horizontal"></div>
+                <div class="absolute bottom-4 left-0 right-0 text-center text-gray-400 text-sm page-number">หน้าที่ 1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal แจ้งเตือน -->
+    <div id="messageModal" class="fixed inset-0 bg-slate-900/60 z-[300] items-center justify-center backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full transform transition-all text-center border border-white/20">
+            <div class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 scale-110">
+                <i class="ph ph-check-circle text-6xl" id="modalIcon"></i>
+            </div>
+            <h3 class="text-2xl font-extrabold text-slate-800 mb-2" id="modalTitle">สำเร็จ</h3>
+            <p class="text-slate-500 mb-8 leading-relaxed" id="modalText">บันทึกไฟล์ PDF เรียบร้อยแล้ว</p>
+            <button onclick="closeModal()" class="btn-purple w-full py-3.5 rounded-xl font-bold text-lg shadow-xl shadow-purple-100 transition-all">
+                ดีเยี่ยม
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Modal เลือกประเภทไฟล์ Export -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/60 z-[300] hidden items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white text-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-200/50">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-export text-purple-500"></i> เลือกรูปแบบไฟล์
+                </h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-1.5 rounded-lg transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <!-- PDF -->
+                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all mb-3 group has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50">
+                    <input type="radio" name="exportFormat" value="pdf" class="mt-1 w-5 h-5 text-purple-600 focus:ring-purple-500" checked>
+                    <div>
+                        <div class="font-bold text-slate-700 group-hover:text-purple-700 transition-colors">เอกสาร PDF (.pdf)</div>
+                        <div class="text-xs text-slate-500 mt-1 leading-relaxed">เหมาะสำหรับส่งอีเมลหรือพิมพ์ข้อสอบ (รวมทุกหน้าเป็นไฟล์เดียว)</div>
+                    </div>
+                </label>
+                
+                <!-- PNG -->
+                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all mb-3 group has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50">
+                    <input type="radio" name="exportFormat" value="png" class="mt-1 w-5 h-5 text-blue-600 focus:ring-blue-500">
+                    <div>
+                        <div class="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">รูปภาพ PNG (.png)</div>
+                        <div class="text-xs text-slate-500 mt-1 leading-relaxed">ความละเอียดสูง รูปแบบไร้การสูญเสียคุณภาพ (ได้ไฟล์แยกแต่ละหน้า)</div>
+                    </div>
+                </label>
+                
+                <!-- JPEG -->
+                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer transition-all group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+                    <input type="radio" name="exportFormat" value="jpeg" class="mt-1 w-5 h-5 text-emerald-600 focus:ring-emerald-500">
+                    <div>
+                        <div class="font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">รูปภาพ JPEG (.jpg)</div>
+                        <div class="text-xs text-slate-500 mt-1 leading-relaxed">ขนาดไฟล์เล็ก เหมาะสำหรับใช้งานบนเน็ตเวิร์ก (ได้ไฟล์แยกแต่ละหน้า)</div>
+                    </div>
+                </label>
+            </div>
+            <div class="px-6 py-5 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end">
+                <button onclick="closeExportModal()" class="px-5 py-2.5 rounded-xl font-semibold text-slate-500 hover:bg-slate-200 transition-colors">ยกเลิก</button>
+                <button onclick="processExport()" class="btn-purple px-6 py-2.5 rounded-xl font-bold flex items-center gap-2">
+                    <i class="ph ph-check-circle text-lg"></i> ยืนยัน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        let pageCount = 1;
+        let currentScale = 1;
+
+        // ตัวแปรสำหรับการลากและปรับขนาด
+        let activeContainer = null;
+        let isDragging = false;
+        let isResizing = false;
+        let isRotating = false;
+        let currentResizer = null;
+        
+        let startX, startY;
+        let startLeft, startTop, startWidth, startHeight, startAngle;
+        const MIN_SIZE = 50; // ขนาดเล็กสุดที่ยอมให้หดได้ (Pixel)
+
+        function showModal(title, text, type = 'success') {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalText').innerText = text;
+            const icon = document.getElementById('modalIcon');
+            icon.className = type === 'success' 
+                ? 'ph ph-check-circle text-5xl text-green-500 mb-4 block mx-auto' 
+                : 'ph ph-x-circle text-5xl text-red-500 mb-4 block mx-auto';
+            document.getElementById('messageModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('messageModal').classList.remove('active');
+        }
+
+        // --- ระบบการคลิกพื้นที่ว่างเพื่อยกเลิกการเลือกภาพ ---
+        document.addEventListener('mousedown', function(e) {
+            // ถัาไม่ได้คลิกโดนรูป หรือ เครื่องมือ ให้เอาแถบเลือกออกให้หมด
+            if (!e.target.closest('.image-container') && !e.target.closest('.toolbar')) {
+                deselectAll();
+            }
+        });
+        document.addEventListener('touchstart', function(e) {
+            if (!e.target.closest('.image-container') && !e.target.closest('.toolbar')) {
+                deselectAll();
+            }
+        });
+
+        function deselectAll() {
+            document.querySelectorAll('.image-container').forEach(c => c.classList.remove('selected'));
+            updateDeleteButtonVisibility();
+        }
+
+        function updateDeleteButtonVisibility() {
+            const hasSelection = document.querySelector('.image-container.selected') !== null;
+            const deleteBtn = document.getElementById('deleteBtn');
+            const rotateBtn = document.getElementById('rotateBtn');
+            if (hasSelection) {
+                deleteBtn.classList.remove('hidden');
+                rotateBtn.classList.remove('hidden');
+            } else {
+                deleteBtn.classList.add('hidden');
+                rotateBtn.classList.add('hidden');
+            }
+        }
+
+        // --- อัปโหลดและสร้างรูปภาพ ---
+        document.getElementById('imageUpload').addEventListener('change', async function(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
+
+            const uploadLabel = document.getElementById('uploadLabel');
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+            
+            // Show loading
+            const originalIcon = uploadIcon.className;
+            uploadLabel.classList.add('opacity-75', 'cursor-not-allowed', 'pointer-events-none');
+            uploadIcon.className = "ph ph-spinner animate-spin text-xl text-purple-500";
+            uploadText.innerText = "กำลังประมวลผล...";
+
+            const pages = document.querySelectorAll('.page-a4');
+            const targetPage = pages[pages.length - 1]; 
+
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        const result = await new Promise((resolve) => {
+                            reader.onload = (event) => resolve(event.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                        createInteractableImage(result, targetPage);
+                    } else if (file.type === 'application/pdf') {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                        
+                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            const page = await pdf.getPage(pageNum);
+                            const viewport = page.getViewport({ scale: 2.0 }); 
+                            
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = viewport.width;
+                            canvas.height = viewport.height;
+                            
+                            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                            const imgData = canvas.toDataURL('image/png', 1.0);
+                            
+                            createInteractableImage(imgData, targetPage, true);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error processing file:", error);
+                showModal('เกิดข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้', 'error');
+            } finally {
+                // Restore loading
+                uploadLabel.classList.remove('opacity-75', 'cursor-not-allowed', 'pointer-events-none');
+                uploadIcon.className = originalIcon;
+                uploadText.innerText = "อัปโหลด (ภาพ/PDF)";
+                this.value = '';
+            }
+        });
+
+        function createInteractableImage(src, parentPage, isPDFPage = false) {
+            const container = document.createElement('div');
+            container.className = 'image-container';
+
+            // ถ้าเป็นหน้า PDF ให้กำหนดขนาด default ให้เป็นสัดส่วน A4 ประมาณ 210x297
+            if (isPDFPage) {
+                container.style.width = '210px';
+                container.style.height = '297px';
+            }
+
+            // ปุ่มลบ
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '<i class="ph ph-x"></i>';
+            deleteBtn.title = "ลบรูปนี้";
+            deleteBtn.onmousedown = (e) => { e.stopPropagation(); container.remove(); updateDeleteButtonVisibility(); };
+            deleteBtn.ontouchstart = (e) => { e.stopPropagation(); container.remove(); updateDeleteButtonVisibility(); };
+
+            // รูปภาพ
+            const img = document.createElement('img');
+            img.src = src;
+            
+            img.onload = () => {
+                const ratio = img.naturalWidth / img.naturalHeight;
+                if (!isPDFPage && ratio !== 1) {
+                    let w = 250;
+                    let h = 250;
+                    if (ratio > 1) {
+                        w = 300;
+                        h = 300 / ratio;
+                    } else {
+                        h = 300;
+                        w = 300 * ratio;
+                    }
+                    container.style.width = w + 'px';
+                    container.style.height = h + 'px';
+                }
+            };
+            
+            container.appendChild(img);
+            container.appendChild(deleteBtn);
+
+            // สร้างจุด Resizer 4 มุม
+            const positions = ['nw', 'ne', 'sw', 'se'];
+            positions.forEach(pos => {
+                const resizer = document.createElement('div');
+                resizer.className = `resizer ${pos}`;
+                
+                // เริ่มกระบวนการปรับขนาด
+                resizer.addEventListener('mousedown', (e) => initResize(e, container, resizer));
+                resizer.addEventListener('touchstart', (e) => initResize(e, container, resizer), {passive: false});
+                
+                container.appendChild(resizer);
+            });
+
+            // สร้างจุด Rotate
+            const rotateHandle = document.createElement('div');
+            rotateHandle.className = 'rotate-handle';
+            rotateHandle.innerHTML = '<i class="ph ph-arrow-counter-clockwise" style="font-size: 14px; display: flex; align-items: center; justify-content: center; height: 100%;"></i>';
+            rotateHandle.title = "หมุนรูปภาพ";
+            
+            // ป้ายบอกองศา
+            const angleBadge = document.createElement('div');
+            angleBadge.className = 'angle-badge';
+            angleBadge.innerText = '0°';
+            container.appendChild(angleBadge);
+            
+            rotateHandle.addEventListener('mousedown', (e) => initRotate(e, container));
+            rotateHandle.addEventListener('touchstart', (e) => initRotate(e, container), {passive: false});
+            
+            container.appendChild(rotateHandle);
+
+            parentPage.appendChild(container);
+
+            // เก็บค่ามุมหมุนไว้ใน dataset
+            container.dataset.angle = 0;
+
+            // ตำแหน่งสุ่มเล็กน้อย
+            const randomOffset = Math.floor(Math.random() * 50);
+            container.style.top = (50 + randomOffset) + 'px';
+            container.style.left = (50 + randomOffset) + 'px';
+
+            // เริ่มกระบวนการลากรูป
+            container.addEventListener('mousedown', (e) => initDrag(e, container));
+            container.addEventListener('touchstart', (e) => initDrag(e, container), {passive: false});
+
+            // เลือกรูปนี้ทันทีที่สร้างเสร็จ
+            selectContainer(container);
+        }
+
+        // --- ฟังก์ชันช่วยเหลือ (Selection, Drag, Resize) ---
+        
+        function selectContainer(container) {
+            document.querySelectorAll('.image-container').forEach(c => {
+                c.classList.remove('selected');
+                c.style.zIndex = '10'; // ค่าปกติ
+            });
+            container.classList.add('selected');
+            container.style.zIndex = '50'; // นำมาไว้บนสุด
+            updateDeleteButtonVisibility();
+        }
+
+        function deleteSelected() {
+            const selected = document.querySelector('.image-container.selected');
+            if (selected) {
+                selected.remove();
+                updateDeleteButtonVisibility();
+            }
+        }
+
+        function rotate90() {
+            const selected = document.querySelector('.image-container.selected');
+            if (selected) {
+                let currentAngle = parseFloat(selected.dataset.angle) || 0;
+                currentAngle = (currentAngle + 90) % 360;
+                selected.style.transform = `rotate(${currentAngle}deg)`;
+                selected.dataset.angle = currentAngle;
+            }
+        }
+
+        function clearAll() {
+            if (confirm('คุณต้องการลบรูปภาพทั้งหมดใช่หรือไม่?')) {
+                document.querySelectorAll('.image-container').forEach(img => img.remove());
+                updateDeleteButtonVisibility();
+            }
+        }
+
+        // จัดการเหตุการณ์คีย์บอร์ด (Delete/Backspace)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                // ตรวจสอบว่าไม่ได้อยู่ใน Input หรือ Textarea (ถ้ามีในอนาคต)
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                    deleteSelected();
+                }
+            }
+        });
+
+        function getClientPos(e) {
+            return {
+                x: e.type.includes('mouse') ? e.clientX : e.touches[0].clientX,
+                y: e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+            };
+        }
+
+        // เริ่มลาก (Drag)
+        function initDrag(e, container) {
+            // ไม่ทำงานถ้าคลิกปุ่มลบ จุดขยาย หรือจุดหมุน
+            if (e.target.closest('.resizer') || e.target.closest('.rotate-handle') || e.target.closest('.delete-btn')) return;
+            
+            e.preventDefault();
+            selectContainer(container);
+
+            isDragging = true;
+            activeContainer = container;
+            
+            const pos = getClientPos(e);
+            startX = pos.x;
+            startY = pos.y;
+            startLeft = container.offsetLeft;
+            startTop = container.offsetTop;
+        }
+
+        // เริ่มปรับขนาด (Resize)
+        function initResize(e, container, resizer) {
+            e.preventDefault();
+            e.stopPropagation(); // ไม่ให้ไปกระตุ้น Event ลาก
+            selectContainer(container);
+
+            isResizing = true;
+            activeContainer = container;
+            currentResizer = resizer;
+
+            const pos = getClientPos(e);
+            startX = pos.x;
+            startY = pos.y;
+            startLeft = container.offsetLeft;
+            startTop = container.offsetTop;
+            startWidth = container.offsetWidth;
+            startHeight = container.offsetHeight;
+        }
+
+        // เริ่มหมุน (Rotate)
+        function initRotate(e, container) {
+            e.preventDefault();
+            e.stopPropagation();
+            selectContainer(container);
+
+            isRotating = true;
+            activeContainer = container;
+            activeContainer.classList.add('rotating');
+
+            const rect = container.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const pos = getClientPos(e);
+            // คำนวณมุมเริ่มต้นระหว่างจุดศูนย์กลางกับตำแหน่งเมาส์
+            startAngle = Math.atan2(pos.y - centerY, pos.x - centerX) * (180 / Math.PI);
+            
+            // อ่านค่ามุมปัจจุบันจาก dataset (ถ้ามี)
+            const currentAngle = parseFloat(container.dataset.angle) || 0;
+            startAngle = startAngle - currentAngle;
+        }
+
+        // ตรวจจับการขยับเมาส์/นิ้ว
+        document.addEventListener('mousemove', interactMove, {passive: false});
+        document.addEventListener('touchmove', interactMove, {passive: false});
+        document.addEventListener('mouseup', interactEnd);
+        document.addEventListener('touchend', interactEnd);
+
+        function interactMove(e) {
+            if (!isDragging && !isResizing && !isRotating) return;
+            e.preventDefault();
+
+            const pos = getClientPos(e);
+            // ปรับค่า dx/dy ตามค่า Scale
+            const dx = (pos.x - startX) / currentScale;
+            const dy = (pos.y - startY) / currentScale;
+
+            if (isDragging && activeContainer) {
+                let newLeft = startLeft + dx;
+                let newTop = startTop + dy;
+
+                // ระบบ Snapping และ Guide Lines
+                const parentPage = activeContainer.parentElement;
+                if (parentPage && parentPage.classList.contains('page-a4')) {
+                    const pageWidth = 210 * 3.7795275591;
+                    const pageHeight = 297 * 3.7795275591;
+                    const centerX = (pageWidth - activeContainer.offsetWidth) / 2;
+                    const centerY = (pageHeight - activeContainer.offsetHeight) / 2;
+                    
+                    const threshold = 10; // ระยะดูด (Snap)
+
+                    // แนวนอน (Vertical Guide)
+                    if (Math.abs(newLeft - centerX) < threshold) {
+                        newLeft = centerX;
+                        parentPage.classList.add('show-v-guide');
+                    } else {
+                        parentPage.classList.remove('show-v-guide');
+                    }
+
+                    // แนวตั้ง (Horizontal Guide)
+                    if (Math.abs(newTop - centerY) < threshold) {
+                        newTop = centerY;
+                        parentPage.classList.add('show-h-guide');
+                    } else {
+                        parentPage.classList.remove('show-h-guide');
+                    }
+                }
+
+                activeContainer.style.left = newLeft + 'px';
+                activeContainer.style.top = newTop + 'px';
+            } 
+            else if (isResizing && activeContainer && currentResizer) {
+                // คำนวณการปรับขนาดตามมุมที่ลาก
+                if (currentResizer.classList.contains('se')) {
+                    if (startWidth + dx > MIN_SIZE) activeContainer.style.width = (startWidth + dx) + 'px';
+                    if (startHeight + dy > MIN_SIZE) activeContainer.style.height = (startHeight + dy) + 'px';
+                } 
+                else if (currentResizer.classList.contains('sw')) {
+                    if (startWidth - dx > MIN_SIZE) {
+                        activeContainer.style.width = (startWidth - dx) + 'px';
+                        activeContainer.style.left = (startLeft + dx) + 'px';
+                    }
+                    if (startHeight + dy > MIN_SIZE) activeContainer.style.height = (startHeight + dy) + 'px';
+                }
+                else if (currentResizer.classList.contains('ne')) {
+                    if (startWidth + dx > MIN_SIZE) activeContainer.style.width = (startWidth + dx) + 'px';
+                    if (startHeight - dy > MIN_SIZE) {
+                        activeContainer.style.height = (startHeight - dy) + 'px';
+                        activeContainer.style.top = (startTop + dy) + 'px';
+                    }
+                }
+                else if (currentResizer.classList.contains('nw')) {
+                    if (startWidth - dx > MIN_SIZE) {
+                        activeContainer.style.width = (startWidth - dx) + 'px';
+                        activeContainer.style.left = (startLeft + dx) + 'px';
+                    }
+                    if (startHeight - dy > MIN_SIZE) {
+                        activeContainer.style.height = (startHeight - dy) + 'px';
+                        activeContainer.style.top = (startTop + dy) + 'px';
+                    }
+                }
+            }
+            else if (isRotating && activeContainer) {
+                const rect = activeContainer.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const currentPos = getClientPos(e);
+                // ข้อมูลพิกัดเมาส์/สัมผัส ไม่ต้องปรับตาม scale เพราะคำนวณจากกึ่งกลาง rect จริงบนจอ
+                const angle = Math.atan2(currentPos.y - centerY, currentPos.x - centerX) * (180 / Math.PI);
+                let finalAngle = Math.round(angle - startAngle);
+                
+                activeContainer.style.transform = `rotate(${finalAngle}deg)`;
+                activeContainer.dataset.angle = finalAngle;
+
+                // อัปเดตป้ายองศา
+                const badge = activeContainer.querySelector('.angle-badge');
+                if (badge) badge.innerText = `${finalAngle}°`;
+            }
+        }
+
+        function interactEnd(e) {
+            if (activeContainer) {
+                activeContainer.classList.remove('rotating');
+                const parentPage = activeContainer.parentElement;
+                if (parentPage) {
+                    parentPage.classList.remove('show-v-guide', 'show-h-guide');
+                }
+            }
+
+            if (isDragging && activeContainer) {
+                // ค้นหาว่าวางลงบนหน้าไหน
+                const pos = getClientPos(e);
+                const pages = document.querySelectorAll('.page-a4');
+                let targetPage = null;
+
+                for (const page of pages) {
+                    const rect = page.getBoundingClientRect();
+                    if (pos.x >= rect.left && pos.x <= rect.right &&
+                        pos.y >= rect.top && pos.y <= rect.bottom) {
+                        targetPage = page;
+                        break;
+                    }
+                }
+
+                if (targetPage && targetPage !== activeContainer.parentElement) {
+                    // ย้ายหน้ากระดาษ
+                    const oldRect = activeContainer.getBoundingClientRect();
+                    targetPage.appendChild(activeContainer);
+                    const newRect = activeContainer.getBoundingClientRect();
+
+                    // ปรับตำแหน่งใหม่หลังจากย้าย Parent (ต้องหารด้วย scale เพราะพิกัด left/top เป็นแบบ unscaled)
+                    const currentLeft = parseFloat(activeContainer.style.left) || 0;
+                    const currentTop = parseFloat(activeContainer.style.top) || 0;
+                    
+                    activeContainer.style.left = (currentLeft + (oldRect.left - newRect.left) / currentScale) + 'px';
+                    activeContainer.style.top = (currentTop + (oldRect.top - newRect.top) / currentScale) + 'px';
+                }
+            }
+
+            isDragging = false;
+            isResizing = false;
+            isRotating = false;
+            activeContainer = null;
+            currentResizer = null;
+        }
+
+        // --- เพิ่มหน้ากระดาษ และ สร้าง PDF ---
+        
+        function addPage() {
+            pageCount++;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'page-wrapper';
+            wrapper.id = 'wrapper-' + pageCount;
+
+            const newPage = document.createElement('div');
+            newPage.className = 'page-a4 relative bg-white';
+            newPage.id = 'page-' + pageCount;
+            
+            newPage.innerHTML = `
+                <div class="guide-line vertical"></div>
+                <div class="guide-line horizontal"></div>
+                <div class="absolute bottom-4 left-0 right-0 text-center text-gray-400 text-sm page-number">หน้าที่ ${pageCount}</div>
+            `;
+            
+            const deletePageBtn = document.createElement('button');
+            deletePageBtn.className = 'absolute top-4 right-4 bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1 rounded text-sm transition font-medium flex items-center gap-1 z-20';
+            deletePageBtn.innerHTML = '<i class="ph ph-trash"></i> ลบหน้านี้';
+            deletePageBtn.onclick = function() {
+                wrapper.remove();
+                updatePageNumbers();
+            };
+            newPage.appendChild(deletePageBtn);
+
+            wrapper.appendChild(newPage);
+            document.getElementById('workspace').appendChild(wrapper);
+            
+            updateScaling(); // ปรับสเกลหน้าใหม่
+            wrapper.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ระบบ Auto Scale หน้า A4
+        function updateScaling() {
+            const workspace = document.getElementById('workspace');
+            const pageWidth = 210 * 3.7795275591; // 210mm to pixels approx
+            const availableWidth = workspace.clientWidth - 40; // ลบ padding
+
+            if (availableWidth < pageWidth) {
+                currentScale = availableWidth / pageWidth;
+            } else {
+                currentScale = 1;
+            }
+
+            document.querySelectorAll('.page-a4').forEach(page => {
+                page.style.transform = `scale(${currentScale})`;
+                // จัดการเรื่องความสูงของพื้นที่หลังสเกล
+                page.parentElement.style.height = (297 * 3.7795275591 * currentScale) + 20 + 'px';
+            });
+        }
+
+        window.addEventListener('resize', updateScaling);
+        window.addEventListener('load', updateScaling);
+        // เรียกใช้ครั้งแรก
+        setTimeout(updateScaling, 100);
+
+        function updatePageNumbers() {
+            const pages = document.querySelectorAll('.page-a4');
+            pageCount = pages.length;
+            pages.forEach((page, index) => {
+                const pageNumEl = page.querySelector('.page-number');
+                if (pageNumEl) pageNumEl.innerText = `หน้าที่ ${index + 1}`;
+            });
+        }
+
+        async function exportToPDF() {
+            // ยกเลิกการเลือกรูปภาพทั้งหมดก่อนถ่ายรูป
+            document.querySelectorAll('.image-container').forEach(c => c.classList.remove('selected'));
+
+            const pages = document.querySelectorAll('.page-a4');
+            if (pages.length === 0) return;
+
+            const btn = document.getElementById('exportBtn');
+            const originalBtnHtml = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i> กำลังสร้าง PDF...';
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            btn.disabled = true;
+
+            // ซ่อน UI 
+            document.body.classList.add('exporting');
+            const tempHiddenElements = document.querySelectorAll('.page-a4 button, .page-number');
+            tempHiddenElements.forEach(el => el.style.display = 'none');
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    
+                    const canvas = await html2canvas(page, { 
+                        scale: 2, 
+                        useCORS: true,
+                        logging: false
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                }
+
+                pdf.save('My_Document.pdf');
+                showModal('สำเร็จ', 'ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้ว', 'success');
+
+            } catch (error) {
+                console.error(error);
+                showModal('เกิดข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้', 'error');
+            } finally {
+                // คืนค่า UI
+                document.body.classList.remove('exporting');
+                tempHiddenElements.forEach(el => el.style.display = '');
+                btn.innerHTML = originalBtnHtml;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.disabled = false;
+            }
+        }
+
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+            document.getElementById('exportModal').classList.add('flex');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+            document.getElementById('exportModal').classList.remove('flex');
+        }
+
+        async function processExport() {
+            closeExportModal();
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            
+            if (format === 'pdf') {
+                await exportToPDF();
+            } else {
+                await exportToImages(format);
+            }
+        }
+
+        async function exportToImages(format) {
+            // ยกเลิกการเลือกรูปภาพทั้งหมดก่อนถ่ายรูป
+            document.querySelectorAll('.image-container').forEach(c => c.classList.remove('selected'));
+
+            const pages = document.querySelectorAll('.page-a4');
+            if (pages.length === 0) return;
+
+            const btn = document.getElementById('exportBtn');
+            const originalBtnHtml = btn.innerHTML;
+            
+            btn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> กำลังสร้าง ${format.toUpperCase()}...`;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            btn.disabled = true;
+
+            // ซ่อน UI 
+            document.body.classList.add('exporting');
+            const tempHiddenElements = document.querySelectorAll('.page-a4 button, .page-number');
+            tempHiddenElements.forEach(el => el.style.display = 'none');
+
+            // หน่วงเวลาเล็กน้อยให้ DOM อัปเดต CSS ซ่อนปุ่มต่างๆ ย้ำอีกรอบ
+            await new Promise(r => setTimeout(r, 100));
+
+            try {
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    
+                    const canvas = await html2canvas(page, { 
+                        scale: 2, 
+                        useCORS: true,
+                        logging: false
+                    });
+                    
+                    let mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+                    let ext = format === 'jpeg' ? 'jpg' : 'png';
+                    
+                    const imgData = canvas.toDataURL(mimeType, format === 'jpeg' ? 0.95 : undefined);
+                    
+                    const link = document.createElement('a');
+                    link.download = `Page_${i + 1}.${ext}`;
+                    link.href = imgData;
+                    link.click();
+                    
+                    if (pages.length > 1) {
+                        await new Promise(r => setTimeout(r, 600)); // หน่วงเวลาให้เบราว์เซอร์จัดการ
+                    }
+                }
+
+                showModal('สำเร็จ', `ดาวน์โหลดไฟล์ ${format.toUpperCase()} เรียบร้อยแล้ว`, 'success');
+
+            } catch (error) {
+                console.error(error);
+                showModal('เกิดข้อผิดพลาด', 'ไม่สามารถสร้างรูปภาพได้', 'error');
+            } finally {
+                // คืนค่า UI
+                document.body.classList.remove('exporting');
+                tempHiddenElements.forEach(el => el.style.display = '');
+                btn.innerHTML = originalBtnHtml;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+</html>
