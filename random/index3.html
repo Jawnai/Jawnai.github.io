@@ -18,8 +18,8 @@
     <meta property="twitter:description" content="โปรแกรมสุ่มหมายเลข 1 ถึง 600 รูปแบบวงล้อสวยงาม ใช้งานฟรี">
     <meta property="twitter:image" content="image/logo.png">
 
-    <title>Random Wheel 1-600</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Random Slot 1-600</title>
+    <link rel="stylesheet" href="style3.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -31,13 +31,10 @@
         
         <div class="content-wrapper">
             <main class="wheel-section">
-            <div class="wheel-container">
-                <canvas id="wheelCanvas" width="500" height="500"></canvas>
-                <div class="pointer"></div>
-                <!-- The center display for the current number -->
-                <div class="center-display" id="centerDisplay">
-                    <span id="currentNumber">?</span>
-                </div>
+            <div class="reel-container">
+                <div class="reel-overlay"></div>
+                <div class="slider-selector"></div>
+                <canvas id="reelCanvas" width="300" height="400"></canvas>
             </div>
             
             <div class="controls">
@@ -87,6 +84,6 @@
     <!-- Celebration particles canvas container handled by confetti.browser.js -->
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="script.js"></script>
+    <script src="script3.js"></script>
 </body>
 </html>

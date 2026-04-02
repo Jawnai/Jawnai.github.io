@@ -70,7 +70,7 @@ const SoundFX = {
 };
 
 // Initialize State
-const STATE_KEY = 'randomWheelState';
+const STATE_KEY = 'randomWheelStateRainbow';
 let maxNumber = 600;
 let numbers = [];
 let currentRotation = 0; // in radians
@@ -106,7 +106,7 @@ function loadState() {
 const centerX = canvas.width / 2;
 const centerY = canvas.height / 2;
 const radius = centerX;
-const colors = ['#e9d5ff', '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7e22ce']; // Purple shades
+const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7', '#ec4899']; // Rainbow colors
 
 // Draw Wheel Background
 function drawWheel() {
@@ -234,14 +234,14 @@ function fireConfetti() {
             angle: 60,
             spread: 55,
             origin: { x: 0 },
-            colors: ['#7e22ce', '#a855f7', '#ffffff']
+            colors: ['#ef4444', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
         });
         confetti({
             particleCount: 5,
             angle: 120,
             spread: 55,
             origin: { x: 1 },
-            colors: ['#7e22ce', '#a855f7', '#ffffff']
+            colors: ['#ef4444', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
         });
 
         if (Date.now() < end) {

@@ -1,6 +1,5 @@
-const canvas = document.getElementById('wheelCanvas');
+const canvas = document.getElementById('reelCanvas');
 const ctx = canvas.getContext('2d');
-const centerDisplay = document.getElementById('currentNumber');
 const spinBtn = document.getElementById('spinBtn');
 const remainingCountEl = document.getElementById('remainingCount');
 
@@ -9,6 +8,9 @@ const resultDisplay = document.getElementById('resultNumberDisplay');
 const keepBtn = document.getElementById('keepBtn');
 const removeBtn = document.getElementById('removeBtn');
 const historyList = document.getElementById('historyList');
+
+const reelContainer = document.querySelector('.reel-container');
+const sliderSelector = document.querySelector('.slider-selector');
 
 // Config Elements
 const configModal = document.getElementById('configModal');
@@ -38,31 +40,20 @@ const SoundFX = {
     },
     playCheer: () => {
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        
         const time = audioCtx.currentTime;
-
-        // Uplifting Bell Arpeggio (Game Show Style)
-        // E5, G#5, B5, E6
         const notes = [659.25, 830.61, 987.77, 1318.51]; 
         notes.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
-            // Combining sine and a little triangle for a "bell" character
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq, time + (i * 0.12));
-            
             const startTime = time + (i * 0.12);
-            // Last note rings longer
             const duration = (i === notes.length - 1) ? 2.5 : 0.4;
-            
-            // Bell envelope (sharp attack, slow decay)
             gain.gain.setValueAtTime(0, startTime);
             gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-            
             osc.start(startTime);
             osc.stop(startTime + duration);
         });
@@ -70,10 +61,9 @@ const SoundFX = {
 };
 
 // Initialize State
-const STATE_KEY = 'randomWheelState';
+const STATE_KEY = 'randomWheelStateSlot';
 let maxNumber = 600;
 let numbers = [];
-let currentRotation = 0; // in radians
 let spinning = false;
 let animationFrameId;
 let selectedNumber = null;
@@ -81,70 +71,79 @@ let spinCount = 0; // Counter for spins
 let historyData = []; // Store history objects
 
 function saveState() {
-    const state = {
-        maxNumber,
-        numbers,
-        historyData,
-        spinCount
-    };
+    const state = { maxNumber, numbers, historyData, spinCount };
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
 }
 
 function loadState() {
     const stateStr = localStorage.getItem(STATE_KEY);
     if (stateStr) {
-        try {
-            return JSON.parse(stateStr);
-        } catch (e) {
-            return null;
-        }
+        try { return JSON.parse(stateStr); } catch (e) { return null; }
     }
     return null;
 }
 
-// Wheel settings
-const centerX = canvas.width / 2;
-const centerY = canvas.height / 2;
-const radius = centerX;
-const colors = ['#e9d5ff', '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7e22ce']; // Purple shades
+// Reel settings
+const boxHeight = 100;
+let spinSequence = [];
+let currentOffset = 0;
+const WIN_INDEX = 3;
 
-// Draw Wheel Background
-function drawWheel() {
-    if (numbers.length === 0) return;
-    
+// Draw Reel Background
+function drawReel() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // We create a decorative wheel since 600 numbers is too many to show text
-    const totalSegments = 60;
-    const sliceAngle = (Math.PI * 2) / totalSegments;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 4rem Outfit';
     
-    // Rotate canvas based on currentRotation
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate(currentRotation);
-    
-    for (let i = 0; i < totalSegments; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
-        ctx.closePath();
-        
-        ctx.fillStyle = colors[i % colors.length];
-        ctx.fill();
-        
-        // Add thin border to separate slices
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = '#ffffff';
-        ctx.stroke();
+    if (spinSequence.length === 0) {
+        ctx.fillStyle = '#1f2937';
+        let displayTxt = numbers.length === 0 ? 'จบ' : '?';
+        ctx.fillText(displayTxt, canvas.width / 2, canvas.height / 2);
+        return;
     }
     
-    ctx.restore();
+    for (let i = 0; i < spinSequence.length; i++) {
+        const yBase = (canvas.height / 2) + (i * boxHeight);
+        const yPos = yBase + currentOffset;
+        
+        if (yPos > -boxHeight && yPos < canvas.height + boxHeight) {
+            // Highlight winner only when spinning is completely finished
+            const isWinner = (i === WIN_INDEX) && !spinning;
+            ctx.fillStyle = isWinner ? '#ef4444' : '#7e22ce';
+            ctx.font = isWinner ? 'bold 4.5rem Outfit' : 'bold 4rem Outfit';
+            ctx.fillText(spinSequence[i], canvas.width / 2, yPos);
+        }
+    }
 }
 
-// Easing Out function (smoother deceleration)
-function easeOutCubic(t) {
-    return 1 - Math.pow(1 - t, 3);
-}
+// Variety of 10 Easing Functions for completely unpredictable stopping patterns
+const EasingFuncs = {
+    snapHeavy: t => { const c1 = 1.70158; return 1 + (c1 + 1) * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }, // 1. Classic strong mechanical kickback
+    snapMedium: t => { const c1 = 1.2; return 1 + (c1 + 1) * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },    // 2. Normal snap back
+    snapLight: t => { const c1 = 0.5; return 1 + (c1 + 1) * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },     // 3. Very gentle overshoot
+    smoothQuint: t => 1 - Math.pow(1 - t, 5),                                                                  // 4. Agonizingly slow and smooth stop
+    smoothCubic: t => 1 - Math.pow(1 - t, 3),                                                                  // 5. Standard fast smooth stop
+    expoCrawl: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),                                                    // 6. Abrupt speed drop, then crawls infinitely slow
+    sineHalt: t => Math.sin((t * Math.PI) / 2),                                                                // 7. Consistent speed that halts gracefully
+    circBrake: t => Math.sqrt(1 - Math.pow(t - 1, 2)),                                                         // 8. Friction brake feeling
+    elasticWobble: t => {                                                                                      // 9. Slams and wobbles back and forth like a spring
+        if (t === 0) return 0;
+        if (t === 1) return 1;
+        const c4 = (2 * Math.PI) / 3;
+        return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    },
+    bounceDrop: t => {                                                                                         // 10. Bounces up and down slightly at the end
+        const n1 = 7.5625; const d1 = 2.75;
+        if (t < 1 / d1) return n1 * t * t;
+        if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+        if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+        return n1 * (t -= 2.625 / d1) * t + 0.984375;
+    }
+};
+let currentEasingFunc = EasingFuncs.snapMedium;
+let previousEasingKey = null;
 
 // Handle spinning
 function spinWheel() {
@@ -152,18 +151,24 @@ function spinWheel() {
     
     spinning = true;
     spinBtn.disabled = true;
-    
-    // Increment spin count
     spinCount++;
+    
+    // Randomize the easing pattern for this spin, strictly preventing repeats!
+    const easingKeys = Object.keys(EasingFuncs);
+    let availableKeys = easingKeys.filter(key => key !== previousEasingKey);
+    const randomKey = availableKeys[Math.floor(Math.random() * availableKeys.length)];
+    previousEasingKey = randomKey;
+    currentEasingFunc = EasingFuncs[randomKey];
+    
+    reelContainer.classList.add('spinning');
+    sliderSelector.classList.remove('winner-pulse');
     
     let winIndex;
     const specialNumbers = [64, 194, 13, 313, 60, 600, 16, 61];
     
-    // Trigger special logic every 5 spins (5, 10, 15, ...)
     if (spinCount % 5 === 0) {
         const availableSpecials = specialNumbers.filter(n => numbers.includes(n));
         
-        // 100% chance to pick if any specials are left
         if (availableSpecials.length > 0) {
             const pick = availableSpecials[Math.floor(Math.random() * availableSpecials.length)];
             winIndex = numbers.indexOf(pick);
@@ -176,47 +181,62 @@ function spinWheel() {
     
     selectedNumber = numbers[winIndex];
 
-    // Math for random spin
-    const spinDuration = 6000 + Math.random() * 2000; // 6 to 8 seconds
-    const startTime = performance.now();
-    const startRotation = currentRotation;
+    const sequenceLength = 60 + Math.floor(Math.random() * 20); // 60-80 fake items below
+    spinSequence = [];
     
-    // Calculate a target rotation: at least 15-20 full spins + random extra
-    const baseRotations = (15 + Math.random() * 5) * Math.PI * 2;
-    const targetRotation = startRotation + baseRotations;
+    // Add fake items above the winner so the box isn't empty when stopped
+    for (let i = 0; i < WIN_INDEX; i++) {
+        spinSequence.push(numbers[Math.floor(Math.random() * numbers.length)]);
+    }
+    
+    // The WINNER!
+    spinSequence.push(selectedNumber);
+    
+    // Add fake items below the winner for the visual spin
+    for (let i = 0; i < sequenceLength; i++) {
+        spinSequence.push(numbers[Math.floor(Math.random() * numbers.length)]);
+    }
 
-    let lastTextUpdate = 0;
+    // Completely randomize the spin duration so it's unpredictable (5s to 11s)
+    const spinDuration = 5000 + Math.random() * 6000;
+    const startTime = performance.now();
+    
+    const targetOffset = -(WIN_INDEX * boxHeight);
+    const startOffset = -((spinSequence.length - 1) * boxHeight);
+    currentOffset = startOffset;
+    
+    let lastTick = 0;
 
     function animate(currentTime) {
         const elapsed = currentTime - startTime;
         let progress = Math.min(elapsed / spinDuration, 1);
         
-        // Apply easing curve
-        const easeProgress = easeOutCubic(progress);
+        // Randomly picked easing calculates the unique physics of this run
+        const easeProgress = currentEasingFunc(progress);
         
-        // Current rotation
-        currentRotation = startRotation + (targetRotation - startRotation) * easeProgress;
+        currentOffset = startOffset + (targetOffset - startOffset) * easeProgress;
         
-        // Draw the wheel at current rotation
-        drawWheel();
+        drawReel();
         
-        // Update center display rapidly but throttled to make it less jittery (every 50ms)
-        if (progress < 0.95) {
-            if (currentTime - lastTextUpdate > 50) {
-                const randomFakeNum = numbers[Math.floor(Math.random() * numbers.length)];
-                centerDisplay.textContent = randomFakeNum;
-                SoundFX.playTick();
-                lastTextUpdate = currentTime;
-            }
-        } else {
-            // Near the end, show the real number to lock it in
-            centerDisplay.textContent = selectedNumber;
+        // Stop shaking near the end to build up the suspense perfectly
+        if (progress > 0.8 && reelContainer.classList.contains('spinning')) {
+            reelContainer.classList.remove('spinning');
+        }
+        
+        // Calculate which box index is closest to center
+        // center matches yPos = 200. box is centered when yPos = 200.
+        // yPos = 200 + i*boxHeight + currentOffset
+        // So i = -currentOffset / boxHeight
+        let currentPassingBox = Math.floor(Math.abs(currentOffset / boxHeight));
+        
+        if (currentPassingBox !== lastTick && progress < 0.98) {
+            SoundFX.playTick();
+            lastTick = currentPassingBox;
         }
 
         if (progress < 1) {
             animationFrameId = requestAnimationFrame(animate);
         } else {
-            // Finish spin
             finishSpin();
         }
     }
@@ -252,10 +272,13 @@ function fireConfetti() {
 
 function finishSpin() {
     spinning = false;
-    centerDisplay.textContent = selectedNumber; // Ensure it displays the right one
     
+    // The win item is already centered by drawReel offset.
     // Prevent immediate re-click
     spinBtn.disabled = true;
+    
+    sliderSelector.classList.add('winner-pulse');
+    reelContainer.classList.remove('spinning');
 
     // Fire confetti!
     if (typeof confetti !== 'undefined') {
@@ -292,9 +315,6 @@ function addHistoryBadge(number, removed, skipSave = false) {
 
 function renderHistory() {
     historyList.innerHTML = '';
-    // Reverse because we append, but data is newest first. So backwards iteration or append properly.
-    // We can just iterate normally and use insertBefore or we can keep it simple:
-    // Actually, appending each item to empty list in order of newest-first works if we append.
     historyData.forEach(item => {
         const span = document.createElement('span');
         span.classList.add('history-chip');
@@ -328,11 +348,10 @@ removeBtn.addEventListener('click', () => {
     modal.classList.add('hidden');
     
     if (numbers.length === 0) {
-        centerDisplay.textContent = "จบ";
         spinBtn.disabled = true;
         spinBtn.textContent = "หมดตัวเลขแล้ว";
-        // Optionally clear wheel or gray it out
-        drawWheel();
+        spinSequence = [];
+        drawReel();
     } else {
         resetWheelUI();
     }
@@ -340,7 +359,11 @@ removeBtn.addEventListener('click', () => {
 
 function resetWheelUI() {
     spinBtn.disabled = false;
-    centerDisplay.textContent = "?";
+    spinSequence = [];
+    currentOffset = 0;
+    sliderSelector.classList.remove('winner-pulse');
+    reelContainer.classList.remove('spinning');
+    drawReel();
 }
 
 // Config Modal Events
@@ -362,10 +385,9 @@ startBtn.addEventListener('click', () => {
     configModal.classList.add('hidden');
     
     remainingCountEl.textContent = numbers.length;
-    spinBtn.textContent = "หมุนวงล้อ";
+    spinBtn.textContent = "สุ่มหมายเลข";
     spinBtn.disabled = false;
     resetWheelUI();
-    drawWheel();
 });
 
 settingsBtn.addEventListener('click', () => {
@@ -383,6 +405,9 @@ spinBtn.addEventListener('click', spinWheel);
 
 // Initial Logic
 function initApp() {
+    // If spinBtn has old text
+    spinBtn.textContent = "สุ่มหมายเลข";
+    
     const savedState = loadState();
     if (savedState) {
         maxNumber = savedState.maxNumber || 600;
@@ -393,12 +418,12 @@ function initApp() {
         maxNumberDisplay.textContent = maxNumber;
         remainingCountEl.textContent = numbers.length;
         renderHistory();
-        drawWheel();
         
         if (numbers.length === 0) {
-            centerDisplay.textContent = "จบ";
             spinBtn.disabled = true;
             spinBtn.textContent = "หมดตัวเลขแล้ว";
+            spinSequence = [];
+            drawReel();
         } else {
             resetWheelUI();
         }
