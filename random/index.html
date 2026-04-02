@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="โปรแกรมสุ่มหมายเลข 1-600 วงล้อหมุนสุ่มตัวเลขใช้งานง่ายและรวดเร็ว พร้อมเอฟเฟกต์สุดพรีเมียม">
+    <meta name="keywords" content="สุ่มตัวเลข, สุ่มหมายเลข, วงล้อสุ่ม, วงล้อหมุน, random number, random wheel">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Random Wheel 1-600 | วงล้อสุ่มหมายเลข">
+    <meta property="og:description" content="โปรแกรมสุ่มหมายเลข 1 ถึง 600 รูปแบบวงล้อสวยงาม ใช้งานฟรี">
+    <meta property="og:image" content="image/logo.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Random Wheel 1-600 | วงล้อสุ่มหมายเลข">
+    <meta property="twitter:description" content="โปรแกรมสุ่มหมายเลข 1 ถึง 600 รูปแบบวงล้อสวยงาม ใช้งานฟรี">
+    <meta property="twitter:image" content="image/logo.png">
+
+    <title>Random Wheel 1-600</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>สุ่มหมายเลข</h1>
+            <p>1 ถึง 600</p>
+        </header>
+        
+        <div class="content-wrapper">
+            <main class="wheel-section">
+            <div class="wheel-container">
+                <canvas id="wheelCanvas" width="500" height="500"></canvas>
+                <div class="pointer"></div>
+                <!-- The center display for the current number -->
+                <div class="center-display" id="centerDisplay">
+                    <span id="currentNumber">?</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="spinBtn" class="btn primary">หมุนวงล้อ</button>
+                <div class="stats">
+                    <p>เหลือตัวเลข: <span id="remainingCount">600</span></p>
+                </div>
+            </div>
+        </main>
+
+            <aside class="history-section">
+                <h3>ประวัติการสุ่ม (ล่าสุด)</h3>
+                <div id="historyList" class="history-list">
+                    <!-- History chips go here -->
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Modal for Result -->
+    <div id="resultModal" class="modal hidden">
+        <div class="modal-content glass">
+            <h2>🎉 ยินดีด้วย 🎉</h2>
+            <p>หมายเลขที่ได้คือ</p>
+            <div class="result-number" id="resultNumberDisplay">000</div>
+            <div class="modal-actions">
+                <button id="keepBtn" class="btn secondary">สุ่มต่อ (เก็บเลขเดิมไว้)</button>
+                <button id="removeBtn" class="btn danger">ลบหมายเลขนี้</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration particles canvas container handled by confetti.browser.js -->
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
