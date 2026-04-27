@@ -23,18 +23,26 @@
                 <li><a href="#education">การศึกษา</a></li>
                 <li><a href="#experience">ประสบการณ์ทำงาน</a></li>
                 <li><a href="#skills">ทักษะ</a></li>
+                <li><a href="#certificates">เกียรติบัตร</a></li>
             </ul>
-            <div class="nav-menu-btn" id="menu-btn">
-                <i class="fas fa-bars"></i>
+            <div class="nav-actions" style="display: flex; align-items: center; gap: 1.5rem;">
+                <div class="theme-toggle" id="theme-toggle" style="cursor: pointer; font-size: 1.2rem; color: var(--primary-color);">
+                    <i class="fas fa-moon"></i>
+                </div>
+                <div class="nav-menu-btn" id="menu-btn">
+                    <i class="fas fa-bars"></i>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Header / Hero Section -->
     <header id="home" class="hero section reveal">
+        <!-- Particles Background -->
+        <div class="particles-container" id="particles"></div>
         <div class="hero-container">
             <div class="hero-text">
-                <p class="greeting">สวัสดีครับ, ผมชื่อเจ้านาย</p>
+                <p class="greeting"><span class="typing-text">สวัสดีครับ, ผมชื่อเจ้านาย</span></p>
                 <h1 class="name" style="font-size: 3rem;">จ.อ. ฐิติวุฒิ คงสมศักดิ์</h1>
                 <h2 class="title" style="font-size: 1.4rem;">จนท.ปฏิบัติการ แผนกเทคโนโลยีดิจิทัล<br><span class="highlight">บก.รร.ชท.สปท.</span></h2>
                 <div class="summary">
@@ -47,7 +55,7 @@
                 </div>
             </div>
             <div class="hero-image">
-                <div class="image-wrapper">
+                <div class="image-wrapper floating">
                     <img src="image/profile.jpg" alt="รูปโปรไฟล์ ฐิติวุฒิ คงสมศักดิ์" id="profile-pic">
 
                 </div>
@@ -336,6 +344,70 @@
                         <i class="fas fa-search"></i>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Certificates Section -->
+    <section id="certificates" class="certificates section reveal bg-gray">
+        <div class="container">
+            <h2 class="section-title">เกียรติบัตรและ<span>ผลงาน</span></h2>
+            <div class="slideshow-container">
+                <!-- Slides Wrapper -->
+                <div class="slides-wrapper" id="slides-wrapper">
+                    <div class="mySlides">
+                        <img src="ser/ICDL.png" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_1397.jpg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_3169.jpg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_3907.jpg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_4732.JPG" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_5976.jpeg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_5981.jpeg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_5982.jpeg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_5983.jpeg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/IMG_5984.jpeg" style="width:100%">
+                    </div>
+                    <div class="mySlides">
+                        <img src="ser/TOPTALEN.png" style="width:100%">
+                    </div>
+                </div>
+
+                <!-- Next and previous buttons -->
+                <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+                <a class="next" onclick="plusSlides(1)">&#10095;</a>
+            </div>
+            
+            <!-- The dots/circles -->
+            <div style="text-align:center; margin-top: 15px;">
+                <span class="dot" onclick="currentSlide(1)"></span>
+                <span class="dot" onclick="currentSlide(2)"></span>
+                <span class="dot" onclick="currentSlide(3)"></span>
+                <span class="dot" onclick="currentSlide(4)"></span>
+                <span class="dot" onclick="currentSlide(5)"></span>
+                <span class="dot" onclick="currentSlide(6)"></span>
+                <span class="dot" onclick="currentSlide(7)"></span>
+                <span class="dot" onclick="currentSlide(8)"></span>
+                <span class="dot" onclick="currentSlide(9)"></span>
+                <span class="dot" onclick="currentSlide(10)"></span>
+                <span class="dot" onclick="currentSlide(11)"></span>
             </div>
         </div>
     </section>

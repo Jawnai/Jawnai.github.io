@@ -10,6 +10,32 @@
     --transition: all 0.3s ease;
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
     --shadow-hover: 0 10px 30px rgba(0, 102, 255, 0.15);
+    
+    /* Theme specific variables */
+    --bg-gray: #F1F5F9;
+    --nav-bg: rgba(255, 255, 255, 0.95);
+    --hero-bg: linear-gradient(135deg, #f8f9fa 0%, #e2e8f0 100%);
+    --blob-bg: rgba(0, 102, 255, 0.05);
+    --timeline-line: #e2e8f0;
+    --footer-bg: #0A2540;
+}
+
+[data-theme="dark"] {
+    --primary-color: #E2E8F0;
+    --secondary-color: #3B82F6;
+    --bg-color: #0F172A;
+    --card-bg: #1E293B;
+    --text-dark: #F8FAFC;
+    --text-light: #94A3B8;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --shadow-hover: 0 10px 30px rgba(59, 130, 246, 0.3);
+    
+    --bg-gray: #0B1120;
+    --nav-bg: rgba(15, 23, 42, 0.95);
+    --hero-bg: linear-gradient(135deg, #020617 0%, #0F172A 100%);
+    --blob-bg: rgba(59, 130, 246, 0.08);
+    --timeline-line: #334155;
+    --footer-bg: #020617;
 }
 
 /* ===== Reset & Base Styles ===== */
@@ -76,7 +102,7 @@ ul {
 }
 
 .bg-gray {
-    background-color: #F1F5F9;
+    background-color: var(--bg-gray);
 }
 
 /* ===== Typography Additions ===== */
@@ -126,9 +152,9 @@ ul {
     position: fixed;
     top: 0;
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--nav-bg);
     backdrop-filter: blur(10px);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     transition: var(--transition);
 }
@@ -195,7 +221,7 @@ ul {
     display: flex;
     align-items: center;
     padding-top: 80px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e2e8f0 100%);
+    background: var(--hero-bg);
     position: relative;
     overflow: hidden;
 }
@@ -302,7 +328,7 @@ ul {
     position: absolute;
     width: 600px;
     height: 600px;
-    background: rgba(0, 102, 255, 0.05);
+    background: var(--blob-bg);
     border-radius: 50%;
     top: -100px;
     right: -100px;
@@ -349,7 +375,7 @@ ul {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--timeline-line);
     padding-top: 2rem;
 }
 
@@ -394,7 +420,7 @@ ul {
     content: '';
     position: absolute;
     width: 2px;
-    background-color: #e2e8f0;
+    background-color: var(--timeline-line);
     top: 0;
     bottom: 0;
     left: 50%;
@@ -422,11 +448,12 @@ ul {
     height: 20px;
     right: -10px;
     background-color: var(--secondary-color);
-    border: 4px solid white;
+    border: 4px solid var(--card-bg);
     top: 15px;
     border-radius: 50%;
     z-index: 1;
     box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.1);
+    animation: pulse 2s infinite;
 }
 
 .timeline-item:nth-child(even) .timeline-dot {
@@ -470,7 +497,7 @@ ul {
     font-size: 0.95rem;
     margin-top: 0.5rem;
     padding-top: 0.5rem;
-    border-top: 1px dashed #e2e8f0;
+    border-top: 1px dashed var(--timeline-line);
 }
 
 /* ===== Achievements Section ===== */
@@ -492,8 +519,8 @@ ul {
 
 .card:hover {
     transform: translateY(-10px);
-    box-shadow: var(--shadow-hover);
-    border-bottom-color: var(--accent-color);
+    box-shadow: var(--shadow-hover), 0 0 20px rgba(0, 102, 255, 0.2);
+    border-bottom-color: var(--secondary-color);
 }
 
 .card-icon {
@@ -646,7 +673,7 @@ ul {
 
 /* ===== Footer & Contact ===== */
 .footer {
-    background-color: var(--primary-color);
+    background-color: var(--footer-bg);
     color: white;
     text-align: center;
     padding-top: 4rem;
@@ -776,7 +803,7 @@ ul {
         top: 100%;
         left: 0;
         width: 100%;
-        background-color: white;
+        background-color: var(--card-bg);
         padding: 2rem;
         box-shadow: 0 10px 10px rgba(0,0,0,0.05);
         text-align: center;
@@ -813,4 +840,159 @@ ul {
     .personal-info {
         grid-template-columns: 1fr;
     }
+
+    /* Slideshow Mobile Adjustments */
+    .slideshow-container {
+        padding: 5px;
+    }
+    
+    .mySlides img {
+        max-height: 350px;
+    }
+    
+    .prev, .next {
+        padding: 10px 14px;
+        font-size: 18px;
+    }
 }
+
+/* ===== Slideshow Section ===== */
+.slideshow-container {
+    max-width: 800px;
+    position: relative;
+    margin: auto;
+    background: var(--card-bg);
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+}
+
+.slides-wrapper {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    align-items: center;
+}
+
+.mySlides {
+    display: flex;
+    flex: 0 0 100%;
+    justify-content: center;
+}
+
+.mySlides img {
+    max-height: 600px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.prev, .next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    width: auto;
+    margin-top: -22px;
+    padding: 16px;
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 24px;
+    transition: 0.6s ease;
+    border-radius: 0 3px 3px 0;
+    user-select: none;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+}
+
+.next {
+    right: 10px;
+    border-radius: 3px 0 0 3px;
+}
+
+.prev {
+    left: 10px;
+}
+
+.prev:hover, .next:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.dot {
+    cursor: pointer;
+    height: 12px;
+    width: 12px;
+    margin: 0 4px;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: inline-block;
+    transition: background-color 0.6s ease;
+}
+
+.active-dot, .dot:hover {
+    background-color: var(--secondary-color);
+}
+
+/* ===== Dynamic Animations ===== */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+}
+
+.floating {
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 102, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
+}
+
+/* Particles / Cyber Nodes */
+.particles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: var(--secondary-color);
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: floatParticle 8s infinite ease-in-out;
+}
+
+@keyframes floatParticle {
+    0%, 100% { transform: translate(0, 0); opacity: 0.1; }
+    50% { transform: translate(20px, -30px); opacity: 0.6; }
+}
+
+/* Typing effect */
+.typing-text {
+    border-right: 3px solid var(--secondary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;
+    display: inline-block;
+    animation: type 2s steps(20, end) forwards, blink 0.8s step-end infinite;
+}
+
+@keyframes type {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink {
+    from, to { border-color: transparent }
+    50% { border-color: var(--secondary-color); }
+}
+

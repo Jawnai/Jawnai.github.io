@@ -80,3 +80,95 @@ document.addEventListener('DOMContentLoaded', () => {
     // Trigger on scroll
     window.addEventListener('scroll', reveal);
 });
+
+// --- Slideshow Logic ---
+let slideIndex = 1;
+
+document.addEventListener('DOMContentLoaded', () => {
+    showSlides(slideIndex);
+    createParticles();
+});
+
+function plusSlides(n) {
+  showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+  showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+  let i;
+  let slides = document.getElementsByClassName("mySlides");
+  let dots = document.getElementsByClassName("dot");
+  let wrapper = document.getElementById("slides-wrapper");
+  if (!slides || slides.length === 0) return;
+  if (n > slides.length) {slideIndex = 1}    
+  if (n < 1) {slideIndex = slides.length}
+  
+  if (wrapper) {
+      wrapper.style.transform = `translateX(-${(slideIndex - 1) * 100}%)`;
+  }
+
+  for (i = 0; i < dots.length; i++) {
+    dots[i].className = dots[i].className.replace(" active-dot", "");
+  }
+  if (dots.length > 0 && dots[slideIndex-1]) {
+      dots[slideIndex-1].className += " active-dot";
+  }
+}
+
+// --- Theme Toggle Logic ---
+const themeToggle = document.getElementById('theme-toggle');
+const htmlElement = document.documentElement;
+const themeIcon = themeToggle ? themeToggle.querySelector('i') : null;
+
+if (themeToggle && themeIcon) {
+    const currentTheme = localStorage.getItem('theme');
+    if (currentTheme) {
+        htmlElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'dark') {
+            themeIcon.classList.replace('fa-moon', 'fa-sun');
+        }
+    }
+
+    themeToggle.addEventListener('click', () => {
+        if (htmlElement.getAttribute('data-theme') === 'dark') {
+            htmlElement.removeAttribute('data-theme');
+            themeIcon.classList.replace('fa-sun', 'fa-moon');
+            localStorage.setItem('theme', 'light');
+        } else {
+            htmlElement.setAttribute('data-theme', 'dark');
+            themeIcon.classList.replace('fa-moon', 'fa-sun');
+            localStorage.setItem('theme', 'dark');
+        }
+    });
+}
+
+// --- Particles Generator ---
+function createParticles() {
+    const container = document.getElementById('particles');
+    if (!container) return;
+    
+    // Create 25 particles
+    for (let i = 0; i < 25; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Randomize
+        const left = Math.random() * 100;
+        const top = Math.random() * 100;
+        const delay = Math.random() * 5;
+        const size = Math.random() * 5 + 3; 
+        const duration = Math.random() * 4 + 6; // 6 to 10s
+        
+        particle.style.left = `${left}%`;
+        particle.style.top = `${top}%`;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.animationDelay = `${delay}s`;
+        particle.style.animationDuration = `${duration}s`;
+        
+        container.appendChild(particle);
+    }
+}
