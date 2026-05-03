@@ -112,12 +112,103 @@ body {
     text-align: center;
 }
 
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    position: relative;
+}
+
 .logo {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 16px;
-    margin-bottom: 12px;
+}
+
+.nav-portal {
+    position: relative;
+}
+
+.portal-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.portal-btn:hover {
+    background: white;
+    color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.portal-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 220px;
+    background: white;
+    border-radius: 20px;
+    padding: 12px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--card-border);
+    z-index: 100;
+    animation: menuFade 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+@keyframes menuFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-header {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.menu-item i {
+    font-size: 1.2rem;
+    color: var(--primary);
+}
+
+.menu-item:hover {
+    background: var(--bg-color);
+    transform: translateX(4px);
+}
+
+.menu-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 4px 0;
 }
 
 .logo i {

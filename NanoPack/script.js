@@ -12,6 +12,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clearBtn');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
     const loadingOverlay = document.getElementById('loadingOverlay');
+    const portalBtn = document.getElementById('portalBtn');
+    const portalMenu = document.getElementById('portalMenu');
+
+    // Portal Menu Toggle
+    portalBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        portalMenu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!portalMenu.contains(e.target) && e.target !== portalBtn) {
+            portalMenu.classList.add('hidden');
+        }
+    });
 
     // Drag & Drop Events
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium QR Generator | QR-MTTS</title>
+    <meta name="description" content="Generate high-quality, custom QR codes with logos, colors, and premium styles. Support for links, text, and small files.">
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <main class="app-container">
+        <header class="app-header">
+            <h1>QR-MTTS <span class="badge">PRO</span></h1>
+            <p>Generate Premium QR Codes for Anything</p>
+        </header>
+
+        <div class="glass-card main-grid">
+            <!-- Left Panel: Inputs & Customization -->
+            <section class="control-panel">
+                <div class="tabs-container">
+                    <button class="tab-btn active" data-tab="link">
+                        <i class="fas fa-link"></i> Link
+                    </button>
+                    <button class="tab-btn" data-tab="text">
+                        <i class="fas fa-align-left"></i> Text
+                    </button>
+                    <button class="tab-btn" data-tab="file">
+                        <i class="fas fa-file-arrow-up"></i> File
+                    </button>
+                </div>
+
+                <div class="tab-content" id="link-tab">
+                    <div class="input-group">
+                        <label for="qr-link">Target URL</label>
+                        <input type="url" id="qr-link" placeholder="https://example.com" value="https://jawnai.github.io">
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="text-tab">
+                    <div class="input-group">
+                        <label for="qr-text">Plain Text</label>
+                        <textarea id="qr-text" placeholder="Type your message here..."></textarea>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="file-tab">
+                    <div class="input-group">
+                        <label for="qr-file">Small File/Image (Max 3KB)</label>
+                        <div class="file-drop-zone" id="file-drop">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Click or Drag File</span>
+                            <input type="file" id="qr-file" hidden>
+                        </div>
+                        <p class="helper-text">QR codes have limited data capacity. Best for small icons or text files.</p>
+                    </div>
+                </div>
+
+                <hr class="separator">
+
+                <div class="customization-section">
+                    <h3><i class="fas fa-magic"></i> Style & Logo</h3>
+                    
+                    <div class="settings-grid">
+                        <div class="input-group">
+                            <label>Dot Color</label>
+                            <input type="color" id="color-dots" value="#2d3436">
+                        </div>
+                        <div class="input-group">
+                            <label>Background</label>
+                            <input type="color" id="color-bg" value="#ffffff">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Center Logo</label>
+                        <div class="logo-upload-btn">
+                            <input type="file" id="logo-file" accept="image/*" hidden>
+                            <button class="secondary-btn" onclick="document.getElementById('logo-file').click()">
+                                <i class="fas fa-image"></i> Choose Logo
+                            </button>
+                            <button class="icon-btn danger hidden" id="remove-logo" title="Remove Logo">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Dot Style</label>
+                        <select id="dot-style">
+                            <option value="square">Square</option>
+                            <option value="dots">Dots</option>
+                            <option value="rounded" selected>Rounded</option>
+                            <option value="extra-rounded">Extra Rounded</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Preview & Download -->
+            <section class="preview-panel">
+                <div id="qr-preview-container" class="qr-canvas">
+                    <!-- QR Code will be rendered here -->
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="download-png" class="primary-btn">
+                        <i class="fas fa-download"></i> Download PNG
+                    </button>
+                    <button id="download-svg" class="secondary-btn">
+                        <i class="fas fa-file-code"></i> SVG
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 QR-MTTS | Built for Jawnai.github.io</p>
+        </footer>
+    </main>
+
+    <!-- QR Code Styling Library -->
+    <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
