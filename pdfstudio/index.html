@@ -36,6 +36,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    screens: {
+                        'xs': '400px',
+                    }
+                }
+            }
+        }
+
+        // เริ่มต้นธีมทันทีเพื่อป้องกันการกระพริบ
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     </script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -49,6 +67,14 @@
             font-family: 'Inter', 'Sarabun', sans-serif;
             user-select: none;
             color: #0f172a;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* ธีมมืด */
+        .dark body {
+            background-color: #0f172a;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1.5px, transparent 1.5px);
+            color: #f8fafc;
         }
 
         #workspace {
@@ -63,6 +89,10 @@
             box-sizing: border-box;
             scrollbar-width: thin;
             scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .dark #workspace {
+            scrollbar-color: #334155 transparent;
         }
 
         .page-a4 {
@@ -287,6 +317,12 @@
             background-color: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .dark .toolbar {
+            background-color: rgba(30, 41, 59, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .btn-purple {
@@ -323,6 +359,17 @@
             color: #0f172a;
         }
 
+        .dark .btn-outline {
+            background-color: rgba(51, 65, 85, 0.5);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+        }
+        .dark .btn-outline:hover {
+            background-color: rgba(51, 65, 85, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #f8fafc;
+        }
+
         /* ซ่อน UI ทั้งหมดขณะดาวน์โหลด PDF */
         .exporting .image-container { border: none !important; }
         .exporting .delete-btn, .exporting .resizer, .exporting .rotate-handle { display: none !important; }
@@ -335,45 +382,55 @@
 
     <!-- แถบเครื่องมือ -->
     <div class="absolute top-4 w-full flex justify-center px-4 z-[200] pointer-events-none">
-        <div class="toolbar pointer-events-auto px-5 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-4 w-full max-w-6xl">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden p-0.5 border border-slate-100">
+        <div class="toolbar pointer-events-auto px-3 sm:px-5 py-2 sm:py-3 rounded-2xl flex items-center justify-between gap-2 sm:gap-4 w-full max-w-6xl">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden p-0.5 border border-slate-100">
                     <img src="image/logopdf.png" alt="PDF Studio Logo" class="w-full h-full object-contain">
                 </div>
-                <div>
-                    <h1 class="text-xl font-black bg-gradient-to-r from-purple-700 to-indigo-500 bg-clip-text text-transparent leading-none tracking-tight">
+                <div class="hidden xs:block sm:block">
+                    <h1 class="text-lg sm:text-xl font-black bg-gradient-to-r from-purple-700 to-indigo-500 bg-clip-text text-transparent leading-none tracking-tight">
                         PDF Studio
                     </h1>
-                    <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Premium Editor</p>
+                    <p class="text-[8px] sm:text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Premium Editor</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-1.5 sm:gap-2.5">
                 <input type="file" id="imageUpload" accept="image/*,application/pdf" multiple class="hidden">
-                <label for="imageUpload" id="uploadLabel" class="btn-outline px-4 md:px-5 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 font-semibold text-sm transition-all relative">
-                    <i class="ph ph-file-arrow-up text-xl text-purple-500" id="uploadIcon"></i> <span class="hidden sm:inline" id="uploadText">อัปโหลด (ภาพ/PDF)</span>
+                <label for="imageUpload" id="uploadLabel" class="btn-outline px-2.5 sm:px-4 md:px-5 py-1.5 sm:py-2.5 rounded-xl cursor-pointer flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 font-semibold transition-all relative">
+                    <i class="ph ph-file-arrow-up text-xl text-purple-500" id="uploadIcon"></i> 
+                    <span class="text-[10px] sm:text-sm" id="uploadText">อัปโหลด</span>
                 </label>
 
-                <button onclick="addPage()" class="btn-outline px-4 md:px-5 py-2.5 rounded-xl flex items-center gap-2 font-semibold text-sm">
-                    <i class="ph ph-file-plus text-xl text-blue-500"></i> <span class="hidden sm:inline">เพิ่มหน้า A4</span>
+                <button onclick="addPage()" class="btn-outline px-2.5 sm:px-4 md:px-5 py-1.5 sm:py-2.5 rounded-xl flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 font-semibold">
+                    <i class="ph ph-file-plus text-xl text-blue-500"></i> 
+                    <span class="text-[10px] sm:text-sm">เพิ่มหน้า</span>
                 </button>
                 
-                <button id="deleteBtn" onclick="deleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 rounded-xl transition flex items-center gap-2 font-semibold border border-red-100 hidden text-sm shadow-sm">
-                    <i class="ph ph-trash text-xl"></i> <span class="hidden lg:inline">ลบที่เลือก</span>
+                <button id="deleteBtn" onclick="deleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl transition flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 font-semibold border border-red-100 hidden shadow-sm">
+                    <i class="ph ph-trash text-xl"></i> 
+                    <span class="text-[10px] sm:text-sm">ลบ</span>
                 </button>
 
-                <button id="rotateBtn" onclick="rotate90()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2.5 rounded-xl transition flex items-center gap-2 font-semibold border border-indigo-100 hidden text-sm shadow-sm">
-                    <i class="ph ph-arrow-clockwise text-xl"></i> <span class="hidden lg:inline">หมุน 90°</span>
+                <button id="rotateBtn" onclick="rotate90()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl transition flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 font-semibold border border-indigo-100 hidden shadow-sm">
+                    <i class="ph ph-arrow-clockwise text-xl"></i> 
+                    <span class="text-[10px] sm:text-sm">หมุน</span>
                 </button>
                 
-                <div class="h-8 w-[1px] bg-slate-200 mx-1 hidden md:block"></div>
+                <div class="h-8 w-[1px] bg-slate-200 mx-0.5 hidden md:block"></div>
                 
-                <button onclick="clearAll()" class="text-slate-400 hover:text-red-500 px-2 py-2.5 transition flex items-center font-medium text-sm" title="ล้างภาพทั้งหมด">
+                <button onclick="clearAll()" class="text-slate-400 hover:text-red-500 px-1.5 py-1.5 transition flex items-center font-medium" title="ล้างภาพทั้งหมด">
                     <i class="ph ph-trash-simple text-xl"></i>
                 </button>
 
-                <button id="exportBtn" onclick="openExportModal()" class="btn-purple px-5 md:px-7 py-2.5 rounded-xl flex items-center gap-2.5 font-bold text-sm ml-1">
-                    <i class="ph ph-export text-xl font-bold"></i> <span>Export</span>
+                <button onclick="toggleTheme()" class="btn-outline px-2.5 sm:px-3 py-1.5 sm:py-2.5 rounded-xl flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 font-semibold ml-0.5" title="สลับธีม สว่าง/มืด">
+                    <i id="themeIcon" class="ph ph-moon text-xl text-indigo-500"></i> 
+                    <span class="text-[10px] sm:text-sm hidden xs:block">ธีม</span>
+                </button>
+
+                <button id="exportBtn" onclick="openExportModal()" class="btn-purple px-3 sm:px-5 md:px-7 py-1.5 sm:py-2.5 rounded-xl flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2.5 font-bold ml-0.5">
+                    <i class="ph ph-export text-xl font-bold"></i> 
+                    <span class="text-[10px] sm:text-sm">Export</span>
                 </button>
             </div>
         </div>
@@ -407,13 +464,13 @@
 
     <!-- Modal แจ้งเตือน -->
     <div id="messageModal" class="fixed inset-0 bg-slate-900/60 z-[300] items-center justify-center backdrop-blur-md">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full transform transition-all text-center border border-white/20">
-            <div class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 scale-110">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full transform transition-all text-center border border-white/20 dark:border-slate-700">
+            <div class="w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 scale-110">
                 <i class="ph ph-check-circle text-6xl" id="modalIcon"></i>
             </div>
-            <h3 class="text-2xl font-extrabold text-slate-800 mb-2" id="modalTitle">สำเร็จ</h3>
-            <p class="text-slate-500 mb-8 leading-relaxed" id="modalText">บันทึกไฟล์ PDF เรียบร้อยแล้ว</p>
-            <button onclick="closeModal()" class="btn-purple w-full py-3.5 rounded-xl font-bold text-lg shadow-xl shadow-purple-100 transition-all">
+            <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-2" id="modalTitle">สำเร็จ</h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed" id="modalText">บันทึกไฟล์ PDF เรียบร้อยแล้ว</p>
+            <button onclick="closeModal()" class="btn-purple w-full py-3.5 rounded-xl font-bold text-lg shadow-xl shadow-purple-100 dark:shadow-none transition-all">
                 ดีเยี่ยม
             </button>
         </div>
@@ -422,45 +479,45 @@
 
     <!-- Modal เลือกประเภทไฟล์ Export -->
     <div id="exportModal" class="fixed inset-0 bg-slate-900/60 z-[300] hidden items-center justify-center backdrop-blur-sm transition-opacity">
-        <div class="bg-white text-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-200/50">
-            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <div class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-200/50 dark:border-slate-700">
+            <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                     <i class="ph ph-export text-purple-500"></i> เลือกรูปแบบไฟล์
                 </h3>
-                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-1.5 rounded-lg transition-colors">
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
                     <i class="ph ph-x text-lg"></i>
                 </button>
             </div>
             <div class="p-6">
                 <!-- PDF -->
-                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all mb-3 group has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50">
+                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-all mb-3 group has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50 dark:has-[:checked]:bg-purple-900/30">
                     <input type="radio" name="exportFormat" value="pdf" class="mt-1 w-5 h-5 text-purple-600 focus:ring-purple-500" checked>
                     <div>
-                        <div class="font-bold text-slate-700 group-hover:text-purple-700 transition-colors">เอกสาร PDF (.pdf)</div>
-                        <div class="text-xs text-slate-500 mt-1 leading-relaxed">เหมาะสำหรับส่งอีเมลหรือพิมพ์ข้อสอบ (รวมทุกหน้าเป็นไฟล์เดียว)</div>
+                        <div class="font-bold text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">เอกสาร PDF (.pdf)</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">เหมาะสำหรับส่งอีเมลหรือพิมพ์ข้อสอบ (รวมทุกหน้าเป็นไฟล์เดียว)</div>
                     </div>
                 </label>
                 
                 <!-- PNG -->
-                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all mb-3 group has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50">
+                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-all mb-3 group has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 dark:has-[:checked]:bg-blue-900/30">
                     <input type="radio" name="exportFormat" value="png" class="mt-1 w-5 h-5 text-blue-600 focus:ring-blue-500">
                     <div>
-                        <div class="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">รูปภาพ PNG (.png)</div>
-                        <div class="text-xs text-slate-500 mt-1 leading-relaxed">ความละเอียดสูง รูปแบบไร้การสูญเสียคุณภาพ (ได้ไฟล์แยกแต่ละหน้า)</div>
+                        <div class="font-bold text-slate-700 dark:text-slate-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">รูปภาพ PNG (.png)</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">ความละเอียดสูง รูปแบบไร้การสูญเสียคุณภาพ (ได้ไฟล์แยกแต่ละหน้า)</div>
                     </div>
                 </label>
                 
                 <!-- JPEG -->
-                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer transition-all group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+                <label class="flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer transition-all group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 dark:has-[:checked]:bg-emerald-900/30">
                     <input type="radio" name="exportFormat" value="jpeg" class="mt-1 w-5 h-5 text-emerald-600 focus:ring-emerald-500">
                     <div>
-                        <div class="font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">รูปภาพ JPEG (.jpg)</div>
-                        <div class="text-xs text-slate-500 mt-1 leading-relaxed">ขนาดไฟล์เล็ก เหมาะสำหรับใช้งานบนเน็ตเวิร์ก (ได้ไฟล์แยกแต่ละหน้า)</div>
+                        <div class="font-bold text-slate-700 dark:text-slate-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">รูปภาพ JPEG (.jpg)</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">ขนาดไฟล์เล็ก เหมาะสำหรับใช้งานบนเน็ตเวิร์ก (ได้ไฟล์แยกแต่ละหน้า)</div>
                     </div>
                 </label>
             </div>
-            <div class="px-6 py-5 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end">
-                <button onclick="closeExportModal()" class="px-5 py-2.5 rounded-xl font-semibold text-slate-500 hover:bg-slate-200 transition-colors">ยกเลิก</button>
+            <div class="px-6 py-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end">
+                <button onclick="closeExportModal()" class="px-5 py-2.5 rounded-xl font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">ยกเลิก</button>
                 <button onclick="processExport()" class="btn-purple px-6 py-2.5 rounded-xl font-bold flex items-center gap-2">
                     <i class="ph ph-check-circle text-lg"></i> ยืนยัน
                 </button>
@@ -483,6 +540,30 @@
         let startX, startY;
         let startLeft, startTop, startWidth, startHeight, startAngle;
         const MIN_SIZE = 50; // ขนาดเล็กสุดที่ยอมให้หดได้ (Pixel)
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('themeIcon');
+            if (!icon) return;
+            if (document.documentElement.classList.contains('dark')) {
+                icon.className = 'ph ph-sun text-xl text-amber-400';
+            } else {
+                icon.className = 'ph ph-moon text-xl text-indigo-500';
+            }
+        }
+        
+        // เรียกใช้เมื่อโหลดหน้าเสร็จ
+        window.addEventListener('DOMContentLoaded', updateThemeIcon);
 
         function showModal(title, text, type = 'success') {
             document.getElementById('modalTitle').innerText = title;
