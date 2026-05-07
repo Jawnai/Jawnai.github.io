@@ -12,13 +12,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clearBtn');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
     const loadingOverlay = document.getElementById('loadingOverlay');
-    const portalBtn = document.getElementById('portalBtn');
-    const portalMenu = document.getElementById('portalMenu');
+    const helpBtn = document.getElementById('helpBtn');
+    const helpModal = document.getElementById('helpModal');
+    const closeModal = document.getElementById('closeModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
 
     // Portal Menu Toggle
     portalBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         portalMenu.classList.toggle('hidden');
+        helpModal.classList.add('hidden'); // Close help if portal opens
+    });
+
+    // Help Modal Toggle
+    helpBtn.addEventListener('click', () => {
+        helpModal.classList.remove('hidden');
+        portalMenu.classList.add('hidden'); // Close portal if help opens
+    });
+
+    const closeHelp = () => helpModal.classList.add('hidden');
+    closeModal.addEventListener('click', closeHelp);
+    closeModalBtn.addEventListener('click', closeHelp);
+
+    helpModal.addEventListener('click', (e) => {
+        if (e.target === helpModal) closeHelp();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeHelp();
+            portalMenu.classList.add('hidden');
+        }
     });
 
     document.addEventListener('click', (e) => {
@@ -199,22 +223,64 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
     }
 
-    // Download All Logic
+    // Compression Level UI
+    const compressionLevel = document.getElementById('compressionLevel');
+    const levelValue = document.getElementById('levelValue');
+
+    compressionLevel.addEventListener('input', (e) => {
+        levelValue.textContent = e.target.value;
+    });
+
+    // Download All Logic (Compressed ZIP)
     downloadAllBtn.addEventListener('click', async () => {
         if (selectedFiles.length === 0) return;
         
+        const zip = new JSZip();
+        const level = parseInt(compressionLevel.value);
+        
         loadingOverlay.classList.remove('hidden');
-        document.getElementById('loadingText').textContent = 'Preparing downloads...';
+        document.getElementById('loadingText').textContent = 'Initializing compression...';
 
-        // Download files with a small delay to avoid browser blocking too many at once
-        for (let i = 0; i < selectedFiles.length; i++) {
-            downloadFile(selectedFiles[i]);
-            // Small delay between downloads
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
+        try {
+            // Add files to zip
+            selectedFiles.forEach((file) => {
+                zip.file(file.name, file);
+            });
 
-        setTimeout(() => {
+            document.getElementById('loadingText').textContent = `Compressing files (Level ${level})...`;
+
+            // Generate ZIP
+            const content = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: {
+                    level: level
+                }
+            }, (metadata) => {
+                if (metadata.percent) {
+                    document.getElementById('loadingText').textContent = `Compressing: ${Math.floor(metadata.percent)}%`;
+                }
+            });
+
+            // Trigger Download
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `NanoPack_Archive_${new Date().getTime()}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
+
+        } catch (error) {
+            console.error('Compression failed:', error);
+            alert('Something went wrong during compression. Please try again.');
+        } finally {
             loadingOverlay.classList.add('hidden');
-        }, 500);
+        }
     });
 });

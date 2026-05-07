@@ -13,6 +13,9 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
+    <!-- JSZip for Compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
@@ -32,6 +35,9 @@
                     <h1>NanoPack</h1>
                 </div>
                 <div class="nav-portal">
+                    <button id="helpBtn" class="portal-btn" title="How to use">
+                        <i class="ph ph-question"></i>
+                    </button>
                     <button id="portalBtn" class="portal-btn" title="System Hub">
                         <i class="ph ph-squares-four"></i>
                     </button>
@@ -65,10 +71,19 @@
                 <input type="file" id="fileInput" multiple hidden>
                 <div class="dropzone-content">
                     <div class="icon-container">
-                        <i class="ph ph-upload-simple"></i>
+                        <i class="ph-duotone ph-cloud-arrow-up"></i>
                     </div>
-                    <h3>Drag & Drop files here</h3>
-                    <p>or <button id="browseBtn" class="text-btn">browse files</button> from your computer</p>
+                    <div class="text-group">
+                        <h3>Drop files here</h3>
+                        <p>Support any file format</p>
+                    </div>
+                    <div class="divider">
+                        <span>or</span>
+                    </div>
+                    <button id="browseBtn" class="upload-btn">
+                        <i class="ph-bold ph-plus"></i>
+                        <span>Choose Files</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -84,9 +99,29 @@
                 <!-- File items will be injected here via JS -->
             </div>
             
+            <div class="compression-settings" id="settingsPanel">
+                <div class="settings-header">
+                    <i class="ph-bold ph-sliders"></i>
+                    <h4>Compression Settings</h4>
+                </div>
+                <div class="settings-body">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Level: <strong id="levelValue">5</strong></span>
+                            <span class="hint">Higher = Smaller file</span>
+                        </div>
+                        <div class="slider-container">
+                            <span class="slider-hint">Fast</span>
+                            <input type="range" id="compressionLevel" min="1" max="9" value="5" step="1">
+                            <span class="slider-hint">Small</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="action-footer">
                 <button id="downloadAllBtn" class="primary-btn">
-                    <i class="ph ph-download-simple"></i> Download All Files
+                    <i class="ph ph-file-zip"></i> Compress & Download ZIP
                 </button>
             </div>
         </div>
@@ -96,6 +131,52 @@
             <p id="loadingText">Processing files...</p>
         </div>
     </main>
+
+    <div id="helpModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="ph-fill ph-info"></i>
+                    <h2>คู่มือการใช้งาน</h2>
+                </div>
+                <button id="closeModal" class="close-btn">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <section>
+                    <h3>🚀 ฟีเจอร์หลัก</h3>
+                    <ul>
+                        <li><strong>Drag & Drop:</strong> ลากไฟล์มาวางเพื่อเพิ่มเข้าระบบได้ทันที</li>
+                        <li><strong>Fast Processing:</strong> ประมวลผลรวดเร็วและปลอดภัย</li>
+                        <li><strong>Privacy First:</strong> ไฟล์ของคุณจะไม่ถูกส่งออกไปไหน ปลอดภัย 100%</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>📖 วิธีการใช้งาน</h3>
+                    <div class="step">
+                        <span class="step-num">1</span>
+                        <p><strong>การเพิ่มไฟล์:</strong> ลากไฟล์มาวางที่พื้นที่ Dropzone หรือกดปุ่ม <strong>"Choose Files"</strong></p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">2</span>
+                        <p><strong>การจัดการ:</strong> ตรวจสอบรายการไฟล์ด้านล่าง สามารถลบไฟล์ที่ไม่ต้องการหรือกด Clear All ได้</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">3</span>
+                        <p><strong>การดาวน์โหลด:</strong> กดปุ่มดาวน์โหลดที่ตัวไฟล์ หรือกด <strong>"Download All Files"</strong> เพื่อโหลดทั้งหมด</p>
+                    </div>
+                </section>
+                <section class="security-note">
+                    <i class="ph-fill ph-shield-check"></i>
+                    <p>ระบบประมวลผลภายในเบราว์เซอร์ของคุณเท่านั้น มั่นใจได้ว่าข้อมูลเป็นส่วนตัวแน่นอน</p>
+                </section>
+            </div>
+            <div class="modal-footer">
+                <button id="closeModalBtn" class="secondary-btn">เข้าใจแล้ว</button>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
