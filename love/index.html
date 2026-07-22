@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy 24th Birthday My Love 💖 | 1 สิงหาคม</title>
+    <meta name="description" content="สุขสันต์วันเกิดครบรอบ 24 ปีนะคนเก่ง 💖 1 สิงหาคม">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Itim&family=Mali:ital,wght@0,300;0,500;0,700;1,400&family=Mitr:wght@300;400;500;600&family=Poppins:wght@300;400;600;700&family=Sacramento&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- PASSCODE LOCK OVERLAY -->
+    <div id="passcodeOverlay" class="passcode-overlay active">
+        <div class="passcode-card glass-card">
+            <div class="lock-icon"><i class="fa-solid fa-lock-heart heart-beat"></i></div>
+            <h2>ใส่รหัสผ่านวันครบรอบของเรา 💕</h2>
+            <p class="passcode-sub">ใส่รหัส 6 หลักเพื่อเข้าสู่หน้าเว็บอวยพรวันเกิดสุดพิเศษ</p>
+            
+            <div class="pin-display">
+                <div class="pin-dot" id="dot-0"></div>
+                <div class="pin-dot" id="dot-1"></div>
+                <div class="pin-dot" id="dot-2"></div>
+                <div class="pin-dot" id="dot-3"></div>
+                <div class="pin-dot" id="dot-4"></div>
+                <div class="pin-dot" id="dot-5"></div>
+            </div>
+
+            <div id="passcodeError" class="passcode-error"></div>
+
+            <div class="keypad">
+                <button class="key-btn" data-key="1">1</button>
+                <button class="key-btn" data-key="2">2</button>
+                <button class="key-btn" data-key="3">3</button>
+                <button class="key-btn" data-key="4">4</button>
+                <button class="key-btn" data-key="5">5</button>
+                <button class="key-btn" data-key="6">6</button>
+                <button class="key-btn" data-key="7">7</button>
+                <button class="key-btn" data-key="8">8</button>
+                <button class="key-btn" data-key="9">9</button>
+                <button class="key-btn hint-key" id="hintBtn" title="ดูคำใบ้"><i class="fa-solid fa-lightbulb"></i></button>
+                <button class="key-btn" data-key="0">0</button>
+                <button class="key-btn del-key" id="delKey" title="ลบ"><i class="fa-solid fa-backspace"></i></button>
+            </div>
+            
+            <div id="hintText" class="hint-text">💡 คำใบ้: วันที่เราเริ่มคบกัน (05-01-68) 💖</div>
+        </div>
+    </div>
+
+    <!-- Background Particle Canvas -->
+    <canvas id="heartCanvas"></canvas>
+
+    <!-- Sound & Music Toggle -->
+    <div class="audio-control">
+        <button id="musicToggleBtn" class="cute-btn circle-btn" title="เปิด/ปิด เสียงเพลง">
+            <i class="fa-solid fa-music"></i>
+            <span class="music-waves" id="musicWaves">
+                <span></span><span></span><span></span>
+            </span>
+        </button>
+    </div>
+
+    <!-- Navigation / Top Floating Bar -->
+    <header class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-heart heart-beat"></i>
+            <span>HBD 24th My Love</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#hero"><i class="fa-solid fa-house"></i> หน้าแรก</a>
+            <a href="#cake-section"><i class="fa-solid fa-cake-candles"></i> เป่าเค้ก</a>
+            <a href="#gallery"><i class="fa-solid fa-images"></i> รูปถ่าย</a>
+            <a href="#reasons"><i class="fa-solid fa-face-smile-wink"></i> 24 สิ่งที่รักเธอ</a>
+            <a href="#gift-section"><i class="fa-solid fa-gift"></i> ของขวัญ</a>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main>
+        <!-- HERO SECTION -->
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <div class="cute-badge">
+                    <i class="fa-solid fa-sparkles"></i> 1 สิงหาคม • Special Birthday <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <h1 class="hero-title">Happy <span class="highlight-pink">24<sup>th</sup></span> Birthday! 🎉</h1>
+                <p class="hero-subtitle">สุขสันต์วันเกิดครบรอบ 24 ปีนะคนเก่ง 💖</p>
+                <p class="hero-desc">ขอให้เธอมีความสุขที่สุดในโลก มีรอยยิ้มที่สดใสแบบนี้ในทุกๆ วันนะ</p>
+                
+                <!-- Countdown / Age Counter Card -->
+                <div class="countdown-card glass-card">
+                    <h3 class="countdown-title"><i class="fa-solid fa-clock-heart"></i> นับถอยหลัง / ฉลองวันเกิด 1 สิงหาคม</h3>
+                    <div class="countdown-timer" id="countdownTimer">
+                        <div class="time-box">
+                            <span id="days">00</span>
+                            <small>วัน</small>
+                        </div>
+                        <div class="time-box">
+                            <span id="hours">00</span>
+                            <small>ชั่วโมง</small>
+                        </div>
+                        <div class="time-box">
+                            <span id="minutes">00</span>
+                            <small>นาที</small>
+                        </div>
+                        <div class="time-box">
+                            <span id="seconds">00</span>
+                            <small>วินาที</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-buttons">
+                    <a href="#cake-section" class="cute-btn primary-btn"><i class="fa-solid fa-cake-candles"></i> ไปเป่าเค้กวันเกิดกัน! 🎂</a>
+                    <a href="#gift-section" class="cute-btn secondary-btn"><i class="fa-solid fa-gift"></i> เปิดกล่องของขวัญ 🎁</a>
+                </div>
+            </div>
+
+            <div class="hero-banner-image">
+                <div class="polaroid-main">
+                    <div class="tape-top"></div>
+                    <div class="polaroid-img-wrapper">
+                        <img src="image/6B8DB9B1-07DB-4B7E-A419-7C3A658BEB94.JPG" alt="Happy Birthday My Princess" id="heroFeaturedImg">
+                    </div>
+                    <div class="polaroid-caption">
+                        <span>Birthday Girl 24 Years Old 💕</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BIRTHDAY CAKE & CANDLE BLOW SECTION -->
+        <section id="cake-section" class="cake-section">
+            <div class="section-header">
+                <span class="sub-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Make a Wish</span>
+                <h2>เป่าเค้กวันเกิด 24 ปี 🎂✨</h2>
+                <p>กดปุ่มอธิษฐานแล้วเป่าเทียนวันเกิดนะ!</p>
+            </div>
+
+            <div class="cake-container">
+                <div class="cake">
+                    <!-- Plate -->
+                    <div class="plate"></div>
+                    <!-- Cake Layers -->
+                    <div class="layer layer-bottom">
+                        <div class="frosting"></div>
+                        <div class="sprinkles"><span></span><span></span><span></span><span></span><span></span></div>
+                    </div>
+                    <div class="layer layer-middle">
+                        <div class="frosting"></div>
+                        <div class="sprinkles"><span></span><span></span><span></span><span></span></div>
+                    </div>
+                    <div class="layer layer-top">
+                        <div class="frosting"></div>
+                        <div class="sprinkles"><span></span><span></span><span></span></div>
+                    </div>
+                    <!-- Candles -->
+                    <div class="candles-wrapper" id="candlesWrapper">
+                        <div class="candle" data-candle="1">
+                            <div class="flame active"></div>
+                            <div class="wick"></div>
+                        </div>
+                        <div class="candle number-candle">
+                            <span class="candle-num">24</span>
+                            <div class="flame active"></div>
+                            <div class="wick"></div>
+                        </div>
+                        <div class="candle" data-candle="2">
+                            <div class="flame active"></div>
+                            <div class="wick"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cake-action">
+                <button id="blowCandleBtn" class="cute-btn primary-btn pulse-anim">
+                    <i class="fa-solid fa-wind"></i> อธิษฐานแล้วเป่าเทียน! 🕯️✨
+                </button>
+                <div id="wishStatusMessage" class="wish-status"></div>
+            </div>
+        </section>
+
+        <!-- PHOTO GALLERY SECTION -->
+        <section id="gallery" class="gallery-section">
+            <div class="section-header">
+                <span class="sub-title"><i class="fa-solid fa-heart"></i> Special Moments</span>
+                <h2>แกลเลอรีความทรงจำสุดหวาน 📸💖</h2>
+                <p>รวบรวมรอยยิ้มและความน่ารักของเธอในทุกช่วงเวลา</p>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="gallery-filters">
+                <button class="filter-btn active" data-filter="all">ทั้งหมด (25 รูป)</button>
+                <button class="filter-btn" data-filter="sweet">ความหวาน 💖</button>
+                <button class="filter-btn" data-filter="smile">รอยยิ้มสดใส 😊</button>
+                <button class="filter-btn" data-filter="cute">ความน่ารัก 🌸</button>
+            </div>
+
+            <!-- Gallery Grid -->
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </section>
+
+        <!-- 24 REASONS WHY I LOVE YOU SECTION -->
+        <section id="reasons" class="reasons-section">
+            <div class="section-header">
+                <span class="sub-title"><i class="fa-solid fa-star"></i> 24 Things For 24 Years</span>
+                <h2>24 เหตุผลที่รักเธอที่สุด 💕</h2>
+                <p>คลิกดูแต่ละการ์ดเพื่ออ่านความในใจนะ!</p>
+            </div>
+
+            <div class="reasons-grid" id="reasonsGrid">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </section>
+
+        <!-- PLAYFUL LOVE CONTRACT / QUESTION SECTION -->
+        <section id="quiz-section" class="quiz-section">
+            <div class="section-header">
+                <span class="sub-title"><i class="fa-solid fa-face-laugh-wink"></i> Playful Question</span>
+                <h2>ข้อตกลงหัวใจ 💖✨</h2>
+                <p>เลือกคำตอบตามความในใจของเธอได้เลยน้า (เลือกตอบตามความจริงนะ! 😉)</p>
+            </div>
+
+            <div class="quiz-card glass-card">
+                <div class="quiz-icon-wrapper">
+                    <i class="fa-solid fa-heart-circle-check heart-beat"></i>
+                </div>
+                <h3>สัญญาว่าจะรักและน่ารักแบบนี้ตลอดไปไหม? 💕</h3>
+                <p class="quiz-question">"สัญญาว่าจะอยู่เป็นความสดใสและคู่ชีวิตเค้าแบบนี้ตลอดไปนะ?"</p>
+                
+                <div class="quiz-buttons-container" id="quizContainer">
+                    <button id="acceptLoveBtn" class="cute-btn primary-btn quiz-btn accept-btn">
+                        <i class="fa-solid fa-heart"></i> สัญญาตกลงที่สุดเลย! 💖
+                    </button>
+                    <button id="rejectLoveBtn" class="cute-btn secondary-btn quiz-btn reject-btn">
+                        <i class="fa-solid fa-xmark"></i> ปฏิเสธ 😜
+                    </button>
+                </div>
+
+                <div id="quizResultMessage" class="quiz-result"></div>
+            </div>
+        </section>
+
+        <!-- GIFT BOX & LOVE LETTER SECTION -->
+        <section id="gift-section" class="gift-section">
+            <div class="section-header">
+                <span class="sub-title"><i class="fa-solid fa-gift"></i> Birthday Surprise</span>
+                <h2>กล่องของขวัญ & จดหมายอวยพร 💌🎁</h2>
+                <p>มีของขวัญชิ้นพิเศษและความในใจซ่อนอยู่ข้างในนะ... กดเปิดกล่องได้เลย!</p>
+            </div>
+
+            <div class="gift-container">
+                <div class="gift-box" id="giftBox">
+                    <div class="gift-lid">
+                        <div class="ribbon-bow"></div>
+                    </div>
+                    <div class="gift-body">
+                        <div class="ribbon-vertical"></div>
+                        <div class="ribbon-horizontal"></div>
+                    </div>
+                    <div class="gift-sparkles">✨ 💖 🌸 🎉 ✨</div>
+                </div>
+                <button id="openGiftBtn" class="cute-btn primary-btn gift-btn">
+                    <i class="fa-solid fa-key"></i> คลิกเพื่อเปิดกล่องของขวัญ 🎁
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- LIGHTBOX MODAL FOR IMAGES -->
+    <div id="imageLightbox" class="lightbox-modal">
+        <span class="lightbox-close" id="lightboxClose">&times;</span>
+        <button class="lightbox-nav prev-btn" id="lightboxPrev"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="lightbox-content">
+            <img id="lightboxImg" src="" alt="Memory Preview">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+        <button class="lightbox-nav next-btn" id="lightboxNext"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <!-- LOVE LETTER MODAL -->
+    <div id="letterModal" class="letter-modal">
+        <div class="letter-card glass-card">
+            <button class="letter-close" id="letterClose">&times;</button>
+            <div class="letter-header">
+                <div class="letter-stamp"><i class="fa-solid fa-heart"></i> 24th</div>
+                <h3>ถึงคนเก่งของเค้า 💖</h3>
+                <p class="date-tag">1 สิงหาคม | Happy 24th Birthday</p>
+            </div>
+            <div class="letter-body">
+                <div id="typewriterText" class="typewriter-content"></div>
+            </div>
+            <div class="letter-footer">
+                <p>รักเธอที่สุดในโลกเลยนะ 💖</p>
+                <button id="closeLetterBtn" class="cute-btn primary-btn">ปิดจดหมาย & รับความรัก 💕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Made with <i class="fa-solid fa-heart heart-beat"></i> specially for your 24th Birthday</p>
+            <p class="copyright">© 1 สิงหาคม • Forever Birthday Girl 💕</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
