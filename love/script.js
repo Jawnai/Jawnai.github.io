@@ -627,12 +627,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const phraseIndex = Math.min(rejectCount, rejectPhrases.length - 1);
         rejectLoveBtn.innerHTML = `<i class="fa-solid fa-xmark"></i> ${rejectPhrases[phraseIndex]}`;
 
-        // Calculate random position inside viewport
-        const padding = 100;
-        const maxX = window.innerWidth - padding - 150;
-        const maxY = window.innerHeight - padding - 60;
-        const randomX = Math.max(padding, Math.floor(Math.random() * maxX));
-        const randomY = Math.max(padding, Math.floor(Math.random() * maxY));
+        // Calculate random position inside viewport safely for mobile & desktop
+        const btnWidth = rejectLoveBtn.offsetWidth || 130;
+        const btnHeight = rejectLoveBtn.offsetHeight || 50;
+        const maxX = Math.max(10, window.innerWidth - btnWidth - 20);
+        const maxY = Math.max(60, window.innerHeight - btnHeight - 60);
+        const randomX = Math.floor(10 + Math.random() * maxX);
+        const randomY = Math.floor(60 + Math.random() * maxY);
 
         rejectLoveBtn.style.position = 'fixed';
         rejectLoveBtn.style.left = `${randomX}px`;
