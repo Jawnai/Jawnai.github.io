@@ -1306,3 +1306,199 @@ section {
     min-height: 40px;
 }
 
+/* ==========================================================================
+   MOBILE & SMALL SCREEN OPTIMIZATION (@media max-width: 576px)
+   ========================================================================== */
+@media (max-width: 576px) {
+    body {
+        font-size: 14px;
+    }
+
+    .navbar {
+        padding: 10px 15px;
+    }
+
+    .logo {
+        font-size: 1.05rem;
+    }
+
+    .audio-control {
+        top: 12px;
+        right: 12px;
+    }
+
+    #musicToggleBtn {
+        width: 42px;
+        height: 42px;
+        font-size: 0.9rem;
+    }
+
+    section {
+        padding: 40px 15px;
+    }
+
+    .section-header h2 {
+        font-size: 1.7rem;
+    }
+
+    .hero-section {
+        padding-top: 20px;
+        gap: 25px;
+    }
+
+    .hero-title {
+        font-size: 2.1rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.15rem;
+    }
+
+    .hero-desc {
+        font-size: 0.95rem;
+    }
+
+    .countdown-card {
+        padding: 15px 10px;
+    }
+
+    .countdown-timer {
+        gap: 8px;
+    }
+
+    .time-box {
+        padding: 6px 8px;
+        min-width: 50px;
+    }
+
+    .time-box span {
+        font-size: 1.25rem;
+    }
+
+    .time-box small {
+        font-size: 0.65rem;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .hero-buttons .cute-btn {
+        width: 100%;
+    }
+
+    .polaroid-main {
+        max-width: 100%;
+    }
+
+    .polaroid-img-wrapper {
+        height: 280px;
+    }
+
+    /* Cake on mobile */
+    .cake-container {
+        transform: scale(0.85);
+        margin: 10px 0;
+    }
+
+    /* Polaroid 2-Column Gallery Grid on Mobile */
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .polaroid-card {
+        padding: 8px 8px 12px 8px;
+    }
+
+    .polaroid-img-box {
+        height: 150px;
+    }
+
+    .polaroid-title {
+        font-size: 0.8rem;
+    }
+
+    .polaroid-tag {
+        font-size: 0.68rem;
+    }
+
+    /* Reasons 1-column on mobile */
+    .reasons-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    /* Quiz Card on Mobile */
+    .quiz-card {
+        padding: 25px 15px;
+    }
+
+    .quiz-card h3 {
+        font-size: 1.3rem;
+    }
+
+    .quiz-question {
+        font-size: 0.98rem;
+    }
+
+    .quiz-buttons-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .quiz-btn {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    /* Passcode Card Mobile */
+    .passcode-card {
+        padding: 25px 15px;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    .passcode-card h2 {
+        font-size: 1.2rem;
+    }
+
+    .pin-display {
+        gap: 10px;
+    }
+
+    .pin-dot {
+        width: 15px;
+        height: 15px;
+    }
+
+    .keypad {
+        gap: 10px;
+        max-width: 230px;
+    }
+
+    .key-btn {
+        width: 52px;
+        height: 52px;
+        font-size: 1.15rem;
+        touch-action: manipulation;
+    }
+
+    /* Modals Mobile */
+    .letter-card {
+        padding: 25px 18px;
+        max-height: 80vh;
+    }
+
+    .letter-header h3 {
+        font-size: 1.4rem;
+    }
+
+    .letter-body {
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+}
+
+
