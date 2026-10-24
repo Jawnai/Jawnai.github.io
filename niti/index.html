@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกและพิมพ์ผลการประเมินพัฒนาการเด็กปฐมวัย - โรงเรียนนิธิปริญญา</title>
+  <link rel="icon" type="image/png" href="images/niti.png">
+  
+  <!-- Google Fonts: Prompt for Modern UI, Sarabun for Authentic Thai School Print -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- SheetJS (Local with CDN fallback) -->
+  <script src="js/vendor/xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+
+  <!-- ==========================================
+       APP HEADER
+       ========================================== -->
+  <header class="app-header no-print">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <div class="school-logo-badge">
+          <img id="header-school-logo" src="images/niti.png" alt="โลโก้โรงเรียนนิธิปริญญา">
+        </div>
+        <div>
+          <div class="brand-title">
+            ระบบประเมินพัฒนาการเด็กปฐมวัย
+          </div>
+          <div class="brand-subtitle">
+            <span class="meta-pill" id="header-meta-class">ชั้นอนุบาลปีที่ 1/2</span>
+            <span class="meta-pill" id="header-meta-termyear">ภาคเรียนที่ 1 / 2569</span>
+            <span style="opacity: 0.8; font-size: 0.8rem;">โรงเรียนนิธิปริญญา</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="openImportModal()" title="นำเข้ารายชื่อจาก Excel หรือ คัดลอกวาง">
+          📥 นำเข้ารายชื่อ
+        </button>
+        <button class="btn btn-light" onclick="openAddStudentModal()" title="เพิ่มนักเรียนทีละคน">
+          ➕ เพิ่มนักเรียน
+        </button>
+        <button class="btn btn-primary" onclick="openBatchPreview()" title="ดูตัวอย่างเอกสารก่อนพิมพ์">
+          👁️ ดูตัวอย่างเอกสาร
+        </button>
+        <button class="btn btn-success" onclick="printBatch('all')" title="พิมพ์แบบประเมินทุกคน">
+          🖨️ พิมพ์ทุกคน (A4)
+        </button>
+        <button class="btn btn-outline" onclick="openSettingsModal()" title="ตั้งค่าข้อมูลโรงเรียนและผู้ลงนาม">
+          ⚙️ ตั้งค่าฟอร์ม
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       MAIN CONTAINER
+       ========================================== -->
+  <main class="main-container no-print">
+
+    <!-- Dashboard Statistics -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">👥</div>
+        <div class="stat-content">
+          <div class="stat-label">นักเรียนทั้งหมด</div>
+          <div class="stat-value" id="stat-total-students">0</div>
+          <div class="stat-subtext">ในห้องเรียนปัจจุบัน</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">📝</div>
+        <div class="stat-content">
+          <div class="stat-label">กรอกคะแนนแล้ว</div>
+          <div class="stat-value" id="stat-evaluated-students">0 / 0</div>
+          <div class="stat-subtext" id="stat-evaluated-pct">0% สมบูรณ์</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon purple">📊</div>
+        <div class="stat-content">
+          <div class="stat-label">คะแนนเฉลี่ยห้อง (เต็ม 100)</div>
+          <div class="stat-value" id="stat-avg-score">0.00</div>
+          <div class="stat-subtext">จากนักเรียนที่ประเมินแล้ว</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon amber">⭐</div>
+        <div class="stat-content">
+          <div class="stat-label">ระดับดีเยี่ยม (80-100)</div>
+          <div class="stat-value" id="stat-excellent-count">0</div>
+          <div class="stat-subtext">ผลประเมินระดับสูงสุด</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Workspace Card -->
+    <section class="content-card">
+      <div class="card-toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="ค้นหาด้วยเลขที่ หรือ ชื่อ-นามสกุล...">
+        </div>
+
+        <div class="toolbar-actions">
+          <button class="btn btn-light btn-sm" onclick="printBatch('selected')" title="พิมพ์เฉพาะคนที่เลือก">
+            🖨️ พิมพ์เฉพาะที่เลือก <span id="selected-count-badge" style="color:var(--primary); font-weight:600;"></span>
+          </button>
+          <button class="btn btn-light btn-sm" onclick="exportToExcel()" title="ส่งออกเป็นไฟล์ Excel พร้อมสูตรร้อยละและระดับคุณภาพ">
+            📊 ส่งออก Excel (.xlsx)
+          </button>
+          <button class="btn btn-light btn-sm" onclick="restoreDemoData()" title="คืนค่าข้อมูลตัวอย่างโรงเรียนนิธิปริญญา">
+            🔄 ข้อมูลตัวอย่าง
+          </button>
+          <button class="btn btn-danger-outline btn-sm" onclick="clearAllStudents()" title="ล้างข้อมูลนักเรียนทั้งหมด">
+            🗑️ ล้างทั้งหมด
+          </button>
+        </div>
+      </div>
+
+      <div class="info-banner">
+        <div class="info-banner-left">
+          <span>💡 <strong>คำแนะนำ:</strong> สามารถคลิกพิมพ์คะแนนแต่ละช่องได้ทันที (กดปุ่ม <code>Enter</code> หรือ <code>ลูกศรลง</code> เพื่อไปยังนักเรียนแถวถัดไป)</span>
+        </div>
+        <div>
+          <span>เกณฑ์: เต็มด้านละ <strong>25 คะแนน</strong> รวม <strong>100 คะแนน</strong></span>
+        </div>
+      </div>
+
+      <!-- Student Score Table -->
+      <div class="table-responsive">
+        <table class="student-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;" class="col-center">
+                <input type="checkbox" id="select-all-cb" title="เลือกทั้งหมด">
+              </th>
+              <th style="width: 55px;" class="col-center">เลขที่</th>
+              <th style="min-width: 180px;">ชื่อ - สกุล</th>
+              <th style="width: 80px;" class="col-center" title="พัฒนาการด้านร่างกาย (เต็ม 25)">ร่างกาย<br><span style="font-size:0.75rem; color:#64748b;">(25)</span></th>
+              <th style="width: 80px;" class="col-center" title="พัฒนาการด้านอารมณ์-จิตใจ (เต็ม 25)">อารมณ์<br><span style="font-size:0.75rem; color:#64748b;">(25)</span></th>
+              <th style="width: 80px;" class="col-center" title="พัฒนาการด้านสังคม (เต็ม 25)">สังคม<br><span style="font-size:0.75rem; color:#64748b;">(25)</span></th>
+              <th style="width: 80px;" class="col-center" title="พัฒนาการด้านสติปัญญา (เต็ม 25)">สติปัญญา<br><span style="font-size:0.75rem; color:#64748b;">(25)</span></th>
+              <th style="width: 75px;" class="col-center" title="คะแนนรวม (เต็ม 100)">รวม<br><span style="font-size:0.75rem; color:#64748b;">(100)</span></th>
+              <th style="width: 75px;" class="col-center">ร้อยละ</th>
+              <th style="width: 95px;" class="col-center">ระดับ</th>
+              <th style="min-width: 170px;">ข้อเสนอแนะ</th>
+              <th style="width: 190px;" class="col-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="student-table-body">
+            <!-- Dynamically populated by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       MODAL: LIVE PRINT PREVIEW (WYSIWYG A4)
+       ========================================== -->
+  <div class="modal-overlay" id="modal-preview">
+    <div class="modal-dialog modal-preview">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>👁️ ตัวอย่างเอกสารก่อนพิมพ์ (A4 ตามฟอร์มโรงเรียน)</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
+      </div>
+
+      <div style="background: #e2e8f0; padding: 0.6rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1; font-size: 0.9rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button class="btn btn-sm btn-light" id="btn-preview-prev" onclick="previewPrevStudent()">◀ ก่อนหน้า</button>
+          <button class="btn btn-sm btn-light" id="btn-preview-next" onclick="previewNextStudent()">ถัดไป ▶</button>
+          <span id="preview-page-indicator" style="margin-left: 0.5rem; font-weight: 500; color: #334155;"></span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <div style="display: flex; background: white; border-radius: var(--radius-sm); border: 1px solid var(--gray-300); overflow: hidden;">
+            <button class="btn btn-sm btn-light" style="border:none; border-radius:0; padding: 0.25rem 0.6rem;" onclick="setPreviewZoom(0.7)" title="ย่อ 70% (เห็นทั้งหน้า A4)">70%</button>
+            <button class="btn btn-sm btn-light" style="border:none; border-radius:0; border-left:1px solid #e2e8f0; padding: 0.25rem 0.6rem;" onclick="setPreviewZoom(0.85)" title="ย่อ 85%">85%</button>
+            <button class="btn btn-sm btn-light active" style="border:none; border-radius:0; border-left:1px solid #e2e8f0; padding: 0.25rem 0.6rem; font-weight:600;" onclick="setPreviewZoom(1.0)" title="ขนาดจริง 100%">100%</button>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="printCurrentPreview()">
+            🖨️ พิมพ์หน้านี้
+          </button>
+          <button class="btn btn-sm btn-success" onclick="printBatch('all')">
+            🖨️ พิมพ์ทุกคนทั้งหมด
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Viewport -->
+      <div class="preview-viewport">
+        <div id="preview-sheet-container">
+          <!-- Dynamic A4 Sheet injected here -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="flex-wrap: wrap; gap: 0.75rem;">
+        <div style="font-size: 0.825rem; color: #475569; margin-right: auto; line-height: 1.4;">
+          💡 <strong>เคล็ดลับการพิมพ์ให้เป๊ะ 100%:</strong> ในหน้าต่างพิมพ์ ให้เอาติ๊ก <u>"ส่วนหัวและส่วนท้าย" (Headers and footers)</u> ออก และตั้งระยะขอบ (Margins) เป็น <u>"ค่าเริ่มต้น" (Default)</u> หรือ <u>"กำหนดเอง" (15mm)</u> จะพอดี 1 หน้า A4 พอดี ไม่ล้นหน้า 2
+        </div>
+        <button class="btn btn-light" onclick="closeModal('modal-preview')">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: IMPORT STUDENTS (EXCEL / CSV / PASTE)
+       ========================================== -->
+  <div class="modal-overlay" id="modal-import">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📥 นำเข้ารายชื่อนักเรียน</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-import')">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tabs -->
+        <div class="modal-tabs">
+          <button class="tab-btn active" id="tab-import-file" onclick="switchImportTab('file')">
+            📄 นำเข้าจากไฟล์ Excel / CSV
+          </button>
+          <button class="tab-btn" id="tab-import-paste" onclick="switchImportTab('paste')">
+            📋 คัดลอกและวางข้อความ
+          </button>
+        </div>
+
+        <!-- View 1: Upload File -->
+        <div id="view-import-file">
+          <div class="dropzone" id="import-dropzone">
+            <div class="dropzone-icon">📊</div>
+            <div class="dropzone-title">คลิกเลือกไฟล์ หรือ ลากไฟล์ Excel / CSV มาวางที่นี่</div>
+            <div class="dropzone-desc">รองรับไฟล์ .xlsx, .xls, .csv (ระบบจะตรวจจับคอลัมน์ให้อัตโนมัติ)</div>
+            <input type="file" id="import-file-input" accept=".xlsx, .xls, .csv" style="display: none;">
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; color: #64748b;">
+              💡 คอลัมน์ที่รองรับ: เลขที่, ชื่อ-สกุล (หรือคำนำหน้า ชื่อ สกุล), คะแนน 4 ด้าน (ถ้ามี)
+            </span>
+            <button class="btn btn-light btn-sm" onclick="downloadExcelTemplate()">
+              ⬇️ ดาวน์โหลดแบบฟอร์มตัวอย่าง (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <!-- View 2: Paste Text -->
+        <div id="view-import-paste" style="display: none;">
+          <p style="font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem;">
+            วางรายชื่อที่คัดลอกจาก Excel, Word หรือ Google Sheets ที่นี่ (1 บรรทัดต่อนักเรียน 1 คน):
+          </p>
+          <textarea class="paste-area" id="paste-input-area" placeholder="ตัวอย่างรูปแบบ:&#10;1  เด็กหญิงรัชนี พรสวรรค์  22  19  17  23&#10;2  เด็กชายกิตติศักดิ์ เจริญพร  24  23  22  24&#10;3  เด็กหญิงปวริศา สุขสมบูรณ์"></textarea>
+          <div style="margin-top: 0.5rem; text-align: right;">
+            <button class="btn btn-light btn-sm" onclick="parsePastedText()">
+              ตรวจสอบและประมวลผลข้อความ
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview of Imported Data -->
+        <div id="import-preview-box" style="margin-top: 1.5rem; display: none; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-weight: 600; font-size: 0.95rem; color: #1e293b;">
+              ตัวอย่างข้อมูลที่ตรวจพบ <span class="badge-level badge-very-good" id="import-preview-count">0 คน</span>
+            </span>
+            <div style="font-size: 0.85rem; display: flex; gap: 1rem; align-items: center;">
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
+                <input type="radio" name="import-mode" value="overwrite" checked> เขียนทับรายชื่อเดิม
+              </label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
+                <input type="radio" name="import-mode" value="append"> เพิ่มต่อท้ายรายชื่อเดิม
+              </label>
+            </div>
+          </div>
+
+          <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <table class="student-table" style="font-size: 0.8rem;">
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align:center;">เลขที่</th>
+                  <th>ชื่อ - นามสกุล</th>
+                  <th style="width: 60px; text-align:center;">ร่างกาย</th>
+                  <th style="width: 60px; text-align:center;">อารมณ์</th>
+                  <th style="width: 60px; text-align:center;">สังคม</th>
+                  <th style="width: 60px; text-align:center;">สติปัญญา</th>
+                  <th>ข้อเสนอแนะ</th>
+                </tr>
+              </thead>
+              <tbody id="import-preview-tbody">
+                <!-- Injected via app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-light" onclick="closeModal('modal-import')">ยกเลิก</button>
+        <button class="btn btn-primary" id="btn-confirm-import" onclick="confirmImport()" disabled>
+          ยืนยันการนำเข้ารายชื่อ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: ADD / EDIT STUDENT
+       ========================================== -->
+  <div class="modal-overlay" id="modal-student-edit">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-student-title">เพิ่มนักเรียน</div>
+        <button class="modal-close" onclick="closeModal('modal-student-edit')">✕</button>
+      </div>
+
+      <form onsubmit="saveStudentForm(event)">
+        <div class="modal-body">
+          <input type="hidden" id="form-student-id">
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">เลขที่ *</label>
+              <input type="number" id="form-student-no" class="form-control" required min="1">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ชื่อ - นามสกุล *</label>
+              <input type="text" id="form-student-name" class="form-control" placeholder="เช่น เด็กหญิงรัชนี พรสวรรค์" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">1. ด้านร่างกาย (เต็ม 25)</label>
+              <input type="number" step="0.5" id="form-student-s1" class="form-control" min="0" max="25" placeholder="คะแนน">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">2. ด้านอารมณ์-จิตใจ (เต็ม 25)</label>
+              <input type="number" step="0.5" id="form-student-s2" class="form-control" min="0" max="25" placeholder="คะแนน">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">3. ด้านสังคม (เต็ม 25)</label>
+              <input type="number" step="0.5" id="form-student-s3" class="form-control" min="0" max="25" placeholder="คะแนน">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">4. ด้านสติปัญญา (เต็ม 25)</label>
+              <input type="number" step="0.5" id="form-student-s4" class="form-control" min="0" max="25" placeholder="คะแนน">
+            </div>
+
+            <div class="form-group col-span-2">
+              <label class="form-label">ข้อเสนอแนะ (จะพิมพ์ลงบนเส้นประในเอกสาร หรือเว้นว่างไว้เขียนด้วยมือ)</label>
+              <textarea id="form-student-remark" class="form-control" rows="2" placeholder="ข้อเสนอแนะพัฒนาการของเด็ก..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modal-student-edit')">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: REMARKS / SUGGESTIONS WITH PRESETS
+       ========================================== -->
+  <div class="modal-overlay" id="modal-remark">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>💬 ข้อเสนอแนะสำหรับ <span id="remark-student-name" style="color:var(--primary);"></span></span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-remark')">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ข้อความข้อเสนอแนะ:</label>
+          <textarea id="remark-input-text" class="form-control" rows="3" placeholder="พิมพ์ข้อเสนอแนะ หรือคลิกเลือกข้อความสำเร็จรูปด้านล่าง..."></textarea>
+        </div>
+
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; color: #64748b;">
+            💡 คลิกเพื่อแทรกข้อความสำเร็จรูปสำหรับเด็กปฐมวัย:
+          </label>
+          <div class="remark-tags" id="preset-remarks-container">
+            <!-- Injected via app.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-light" onclick="closeModal('modal-remark')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveRemark()">บันทึกข้อเสนอแนะ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: FORM SETTINGS & SIGNATURES
+       ========================================== -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>⚙️ ตั้งค่าหัวเอกสารและข้อมูลผู้ลงนาม (ตามฟอร์มโรงเรียน)</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+      </div>
+
+      <form onsubmit="saveSettings(event)">
+        <div class="modal-body">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;">
+            🏫 ข้อมูลหัวเอกสารและโรงเรียน
+          </h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">ชื่อโรงเรียน</label>
+              <input type="text" id="cfg-school-name" class="form-control" value="โรงเรียนนิธิปริญญา">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">หัวเรื่องเอกสาร (บรรทัดที่ 1)</label>
+              <input type="text" id="cfg-doc-title" class="form-control" value="ผลการประเมินพัฒนาการเด็กปฐมวัย">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ระดับชั้น (หัวเอกสาร)</label>
+              <input type="text" id="cfg-grade-level" class="form-control" value="ชั้นอนุบาลปีที่ 1">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ห้องเรียน (ระบุในบรรทัดชื่อนักเรียน)</label>
+              <input type="text" id="cfg-class-name" class="form-control" value="ชั้นอนุบาลปีที่ 1/2">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ภาคเรียน</label>
+              <input type="text" id="cfg-term" class="form-control" value="ภาคเรียนที่ 1">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ปีการศึกษา</label>
+              <input type="text" id="cfg-year" class="form-control" value="2569">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.5rem; background: #f8fafc; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid #e2e8f0;">
+            <label class="form-label">ตราสัญลักษณ์โรงเรียน (โลโก้บนหัวกระดาษ)</label>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <input type="file" id="logo-file-input" accept="image/*" onchange="handleLogoUpload(event)">
+              <button type="button" class="btn btn-light btn-sm" onclick="resetLogoToDefault()">คืนค่าโลโก้นิธิปริญญา</button>
+            </div>
+          </div>
+
+          <h4 style="font-size: 0.95rem; margin: 1.25rem 0 0.75rem 0; color: var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;">
+            ✍️ รายชื่อผู้ลงนามท้ายเอกสาร
+          </h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">ชื่อครูประจำชั้น (ลายเซ็นที่ 1)</label>
+              <input type="text" id="cfg-teacher-name" class="form-control" value="นางสาวอริสา ศิริบูรณ์">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ตำแหน่ง</label>
+              <input type="text" id="cfg-teacher-role" class="form-control" value="ครูประจำชั้น">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ชื่อหัวหน้าฝ่ายวิชาการ (ลายเซ็นที่ 2)</label>
+              <input type="text" id="cfg-academic-head-name" class="form-control" value="นางสาวน้ำฝน พุ่มมาลี">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ตำแหน่ง</label>
+              <input type="text" id="cfg-academic-head-role" class="form-control" value="หัวหน้าฝ่ายวิชาการ">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ชื่อผู้อำนวยการโรงเรียน (ลายเซ็นที่ 3)</label>
+              <input type="text" id="cfg-principal-name" class="form-control" value="นางกาญจนา เดชฟุ้ง">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ตำแหน่ง</label>
+              <input type="text" id="cfg-principal-role" class="form-control" value="ผู้อำนวยการโรงเรียนนิธิปริญญา">
+            </div>
+          </div>
+
+          <h4 style="font-size: 0.95rem; margin: 1.25rem 0 0.75rem 0; color: var(--primary); border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;">
+            🎯 คะแนนเต็มแต่ละด้าน (ค่าเริ่มต้นด้านละ 25)
+          </h4>
+          <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="form-group">
+              <label class="form-label">1. ร่างกาย</label>
+              <input type="number" id="cfg-full-s1" class="form-control" value="25">
+            </div>
+            <div class="form-group">
+              <label class="form-label">2. อารมณ์-จิตใจ</label>
+              <input type="number" id="cfg-full-s2" class="form-control" value="25">
+            </div>
+            <div class="form-group">
+              <label class="form-label">3. สังคม</label>
+              <input type="number" id="cfg-full-s3" class="form-control" value="25">
+            </div>
+            <div class="form-group">
+              <label class="form-label">4. สติปัญญา</label>
+              <input type="number" id="cfg-full-s4" class="form-control" value="25">
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-light btn-sm" onclick="exportProjectJSON()">
+              💾 สำรองข้อมูลระบบทั้งหมด (.json)
+            </button>
+            <label class="btn btn-light btn-sm" style="margin: 0; cursor: pointer;">
+              📂 นำเข้าไฟล์สำรอง (.json)
+              <input type="file" accept=".json" onchange="importProjectJSON(event)" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('modal-settings')">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกการตั้งค่า</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       CONTAINER FOR NATIVE BROWSER PRINT (A4)
+       ========================================== -->
+  <div id="print-container">
+    <!-- Dynamically populated when printing -->
+  </div>
+
+  <!-- Main Application Script -->
+  <script src="js/app.js"></script>
+</body>
+</html>
