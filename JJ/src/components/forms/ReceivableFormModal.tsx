@@ -1,6 +1,7 @@
 // src/components/forms/ReceivableFormModal.tsx
-import React, { useState, useEffect } from 'react';
-import { X, Receipt, Calendar, Check, Camera, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { X, Receipt, Calendar, Check, Camera, Trash2, FolderKanban } from 'lucide-react';
 import { db } from '../../db';
 import { getTodayDateString } from '../../utils/thaiDate';
 import type { Receivable, ReceivableStatus } from '../../types';
@@ -25,6 +26,16 @@ export const ReceivableFormModal: React.FC<ReceivableFormModalProps> = ({
   const [status, setStatus] = useState<ReceivableStatus>('pending');
   const [receiptImage, setReceiptImage] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
+
+  const allReceivables = useLiveQuery(() => db.receivables.toArray(), []) || [];
+  const suggestedTitles = useMemo(() => {
+    const set = new Set<string>();
+    allReceivables.forEach((r) => {
+      const t = r.title?.trim();
+      if (t) set.add(t);
+    });
+    return Array.from(set).slice(0, 8);
+  }, [allReceivables]);
 
   useEffect(() => {
     if (isOpen) {
@@ -155,17 +166,43 @@ export const ReceivableFormModal: React.FC<ReceivableFormModalProps> = ({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              ชื่อรายการ / คนที่ต้องจ่ายคืน / บริษัทที่เบิก *
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                ชื่องาน / หัวข้อ / ลูกค้า / บริษัทที่เบิก <span className="text-red-500">*</span>
+              </label>
+              {suggestedTitles.length > 0 && (
+                <span className="text-[10px] text-slate-400">เลือกจากงานเดิมได้</span>
+              )}
+            </div>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="เช่น เบิกค่าทางด่วนบ. เอซีเอ็ม, สมชายคืนเงิน..."
+              placeholder="เช่น ออกแบบเว็บไซต์, ถ่ายภาพสินค้า, บ. สมชาย..."
               className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
+
+            {/* Quick Suggestions */}
+            {suggestedTitles.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                <span className="text-[10px] text-slate-400 font-medium">หัวข้องานเดิม:</span>
+                {suggestedTitles.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTitle(t)}
+                    className={`text-[11px] px-2 py-0.5 rounded-lg border transition-all ${
+                      title === t
+                        ? 'bg-amber-500 text-white border-amber-500 font-semibold shadow-xs'
+                        : 'bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/40'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Amount */}
