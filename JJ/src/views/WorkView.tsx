@@ -11,6 +11,7 @@ import {
   Trash2, 
   Calendar,
   AlertCircle 
+  ,Download, Image, FileText, CheckCircle2
 } from 'lucide-react';
 import { db } from '../db';
 import { formatThaiDate, formatThaiCurrency } from '../utils/thaiDate';
@@ -32,6 +33,8 @@ export const WorkView: React.FC<WorkViewProps> = ({
     id: number;
     title: string;
   } | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'paid'>('all');
 
   // Load all work logs & work expenses
   const workLogs = useLiveQuery(() => db.workLogs.orderBy('date').reverse().toArray(), []) || [];
@@ -57,6 +60,61 @@ export const WorkView: React.FC<WorkViewProps> = ({
     () => monthWorkExpenses.reduce((acc, curr) => acc + (curr.amount || 0), 0),
     [monthWorkExpenses]
   );
+
+  const locations = useMemo(() => [...new Set(workLogs.map((w) => w.location))].sort((a,b) => a.localeCompare(b, 'th')), [workLogs]);
+  const visibleLogs = useMemo(() => workLogs.filter((w) =>
+    (selectedLocation === 'all' || w.location === selectedLocation) &&
+    (paymentFilter === 'all' || (w.paymentStatus || 'pending') === paymentFilter)
+  ), [workLogs, selectedLocation, paymentFilter]);
+  const groupedLogs = useMemo(() => visibleLogs.reduce<Record<string, WorkLog[]>>((groups, log) => {
+    (groups[log.location] ||= []).push(log);
+    return groups;
+  }, {}), [visibleLogs]);
+
+  const exportRows = () => visibleLogs.map((log) => ({
+    log,
+    expenses: workExpenses.filter((e) => e.workLogId === log.id || (!e.workLogId && e.date === log.date)),
+  }));
+
+  const exportImage = async () => {
+    const rows = exportRows();
+    const canvas = document.createElement('canvas');
+    const scale = 2;
+    const rowHeight = 92;
+    canvas.width = 900 * scale;
+    canvas.height = Math.max(360, 170 + rows.length * rowHeight) * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, 900, canvas.height / scale);
+    ctx.fillStyle = '#1d4ed8'; ctx.fillRect(0, 0, 900, 110);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif'; ctx.fillText('รายงานการทำงาน', 34, 48);
+    ctx.font = '16px sans-serif'; ctx.fillText(`สถานที่: ${selectedLocation === 'all' ? 'ทั้งหมด' : selectedLocation}  |  สถานะ: ${paymentFilter === 'all' ? 'ทั้งหมด' : paymentFilter === 'paid' ? 'ได้รับเงินแล้ว' : 'ยังไม่ได้รับเงิน'}`, 34, 82);
+    let y = 145;
+    rows.forEach(({log, expenses}) => {
+      ctx.fillStyle = '#0f172a'; ctx.font = 'bold 19px sans-serif'; ctx.fillText(`${log.location}  ·  ${formatThaiDate(log.date)}`, 34, y);
+      ctx.fillStyle = '#475569'; ctx.font = '16px sans-serif'; ctx.fillText(`${log.startTime}–${log.endTime}  |  ${log.hoursWorked} ชม.  |  ${log.paymentStatus === 'paid' ? 'ได้รับเงินแล้ว' : 'ยังไม่ได้รับเงิน'}  |  ค่าเดินทาง ${formatThaiCurrency(expenses.reduce((s,e) => s + e.amount, 0))}`, 34, y + 27);
+      if (log.notes) { ctx.fillStyle='#64748b'; ctx.fillText(log.notes.slice(0, 100), 34, y + 52); }
+      ctx.strokeStyle = '#cbd5e1'; ctx.beginPath(); ctx.moveTo(34, y + 68); ctx.lineTo(866, y + 68); ctx.stroke(); y += rowHeight;
+    });
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return;
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'work-report.png'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportPdf = () => {
+    const rows = exportRows();
+    const win = window.open('', '_blank');
+    if (!win) { alert('เบราว์เซอร์บล็อกหน้าต่างรายงาน กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
+    const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+    win.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>รายงานการทำงาน</title><style>body{font-family:Arial,sans-serif;color:#0f172a;padding:32px}h1{color:#1d4ed8}.meta{color:#475569;margin-bottom:24px}.row{padding:14px 0;border-bottom:1px solid #cbd5e1}.title{font-weight:bold;font-size:16px}.sub{margin-top:6px;color:#475569}@media print{body{padding:0}}</style></head><body><h1>รายงานการทำงาน</h1><div class="meta">สถานที่: ${escape(selectedLocation === 'all' ? 'ทั้งหมด' : selectedLocation)} | สถานะ: ${paymentFilter === 'all' ? 'ทั้งหมด' : paymentFilter === 'paid' ? 'ได้รับเงินแล้ว' : 'ยังไม่ได้รับเงิน'} | ${new Date().toLocaleDateString('th-TH')}</div>${rows.map(({log,expenses})=>`<div class="row"><div class="title">${escape(log.location)} · ${formatThaiDate(log.date)}</div><div class="sub">${log.startTime}–${log.endTime} | ${log.hoursWorked} ชั่วโมง | ${log.paymentStatus === 'paid' ? 'ได้รับเงินแล้ว' : 'ยังไม่ได้รับเงิน'} | ค่าเดินทาง ${formatThaiCurrency(expenses.reduce((s,e)=>s+e.amount,0))}</div>${log.notes?`<div class="sub">${escape(log.notes)}</div>`:''}</div>`).join('')}<script>window.onload=()=>window.print()<\/script></body></html>`);
+    win.document.close();
+  };
+
+  const togglePayment = async (log: WorkLog) => {
+    if (!log.id) return;
+    await db.workLogs.update(log.id, { paymentStatus: log.paymentStatus === 'paid' ? 'pending' : 'paid', updatedAt: Date.now() });
+  };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -140,7 +198,20 @@ export const WorkView: React.FC<WorkViewProps> = ({
           </span>
         </div>
 
-        {workLogs.length === 0 ? (
+        <div className="grid grid-cols-2 gap-2">
+          <select aria-label="กรองสถานที่" value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} className="min-w-0 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs">
+            <option value="all">ทุกสถานที่</option>{locations.map((loc)=><option key={loc} value={loc}>{loc}</option>)}
+          </select>
+          <select aria-label="กรองสถานะรับเงิน" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)} className="min-w-0 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs">
+            <option value="all">ทุกสถานะเงิน</option><option value="pending">ยังไม่ได้รับเงิน</option><option value="paid">ได้รับเงินแล้ว</option>
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={exportPdf} className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 text-white text-xs font-semibold"><FileText className="w-4 h-4"/>ส่งออก PDF</button>
+          <button onClick={exportImage} className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold"><Image className="w-4 h-4"/>ส่งออกรูปภาพ</button>
+        </div>
+
+        {visibleLogs.length === 0 ? (
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-center border border-slate-100 dark:border-slate-800">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3">
               <Briefcase className="w-6 h-6" />
@@ -153,7 +224,10 @@ export const WorkView: React.FC<WorkViewProps> = ({
             </p>
           </div>
         ) : (
-          workLogs.map((log) => {
+          Object.entries(groupedLogs).map(([location, logs]) => (
+            <div key={location} className="space-y-2">
+              <h4 className="sticky top-0 z-[1] flex items-center gap-2 rounded-xl bg-blue-50/95 dark:bg-blue-950/90 px-3 py-2 text-xs font-bold text-blue-800 dark:text-blue-200"><MapPin className="w-3.5 h-3.5"/>{location}<span className="ml-auto font-medium">{logs.length} รายการ</span></h4>
+              {logs.map((log) => {
             // Associated transit expenses for this work log
             const linkedExpenses = workExpenses.filter(
               (e) => e.workLogId === log.id || (!e.workLogId && e.date === log.date)
@@ -202,17 +276,13 @@ export const WorkView: React.FC<WorkViewProps> = ({
 
                 {/* Location & Time */}
                 <div className="mt-2.5">
-                  <div className="flex items-center space-x-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                    <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="truncate">{log.location}</span>
-                  </div>
-
                   <div className="flex items-center space-x-1 text-xs text-slate-500 dark:text-slate-400 mt-1 ml-5">
                     <Clock className="w-3.5 h-3.5" />
                     <span>
                       {log.startTime} น. - {log.endTime} น.
                     </span>
                   </div>
+                  <button onClick={() => togglePayment(log)} className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${log.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}`}><CheckCircle2 className="w-3.5 h-3.5"/>{log.paymentStatus === 'paid' ? 'ได้รับเงินแล้ว · แตะเพื่อเปลี่ยน' : 'ยังไม่ได้รับเงิน · แตะเพื่อเปลี่ยน'}</button>
 
                   {log.notes && (
                     <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl">
@@ -274,7 +344,9 @@ export const WorkView: React.FC<WorkViewProps> = ({
                 )}
               </div>
             );
-          })
+              })}
+            </div>
+          ))
         )}
       </section>
 

@@ -15,6 +15,7 @@ export interface WorkLog {
   startTime: string; // HH:mm
   endTime: string; // HH:mm
   hoursWorked: number;
+  paymentStatus?: ReceivableStatus;
   notes?: string;
   createdAt: number;
   updatedAt: number;

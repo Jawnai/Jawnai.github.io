@@ -23,6 +23,7 @@ export const WorkFormModal: React.FC<WorkFormModalProps> = ({
   const [startTime, setStartTime] = useState('08:30');
   const [endTime, setEndTime] = useState('17:30');
   const [notes, setNotes] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid'>('pending');
   const [savedLocations, setSavedLocations] = useState<string[]>([]);
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [customLocInput, setCustomLocInput] = useState('');
@@ -35,12 +36,14 @@ export const WorkFormModal: React.FC<WorkFormModalProps> = ({
         setStartTime(initialData.startTime);
         setEndTime(initialData.endTime);
         setNotes(initialData.notes || '');
+        setPaymentStatus(initialData.paymentStatus || 'pending');
       } else {
         setLocation('');
         setDate(getTodayDateString());
         setStartTime('08:30');
         setEndTime('17:30');
         setNotes('');
+        setPaymentStatus('pending');
       }
       setShowLocationInput(false);
       setCustomLocInput('');
@@ -83,6 +86,7 @@ export const WorkFormModal: React.FC<WorkFormModalProps> = ({
       startTime,
       endTime,
       hoursWorked: hours,
+      paymentStatus,
       notes: notes.trim(),
       createdAt: initialData?.createdAt || Date.now(),
       updatedAt: Date.now(),
@@ -252,6 +256,15 @@ export const WorkFormModal: React.FC<WorkFormModalProps> = ({
             <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
               {formatted} ({hours} ชม.)
             </span>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">สถานะการรับเงิน</label>
+            <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as 'pending' | 'paid')} className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white">
+              <option value="pending">ยังไม่ได้รับเงิน</option>
+              <option value="paid">ได้รับเงินแล้ว</option>
+            </select>
           </div>
 
           {/* Notes */}
